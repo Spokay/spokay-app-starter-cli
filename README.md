@@ -1,4 +1,4 @@
-# spokay-app-starter
+# spokay-app-starter-cli
 
 A CLI for scaffolding OIDC-ready starter projects: an Angular SPA, a Spring Boot resource
 server, or both wired to each other.
@@ -6,7 +6,7 @@ server, or both wired to each other.
 ## Installation
 
 ```bash
-npm install -g spokay-app-starter
+npm install -g spokay-app-starter-cli   # installs the `spokay-app-starter` command
 ```
 
 Local development:

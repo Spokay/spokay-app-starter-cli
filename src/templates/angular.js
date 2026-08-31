@@ -79,7 +79,7 @@ const angularTemplate = {
     __NODE_VERSION__: answers.nodeVersion,
     __PKG_MGR__: answers.packageManager,
     __PKG_MGR_RUN__: { npm: 'npm run', pnpm: 'pnpm', yarn: 'yarn' }[answers.packageManager],
-    __CLI_PACKAGE__: 'spokay-app-starter',
+    __CLI_PACKAGE__: 'spokay-app-starter-cli',
   }),
 
   postSteps: [

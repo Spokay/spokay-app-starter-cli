@@ -1,7 +1,8 @@
 # CLAUDE.md
 
-Guidance for Claude Code working on `spokay-app-starter`, the CLI that scaffolds the
-starter templates.
+Guidance for Claude Code working on `spokay-app-starter-cli`, the CLI that scaffolds the
+starter templates. The published package is `spokay-app-starter-cli`; the command it
+installs is `spokay-app-starter`.
 
 ## What this CLI does
 

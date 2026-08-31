@@ -25,7 +25,10 @@ try {
   const packagePath = path.join(__dirname, '../package.json');
   assert(fs.existsSync(packagePath), 'package.json should exist');
 
-  assert(packageJson.name === 'spokay-app-starter', 'Package name should be spokay-app-starter');
+  assert(
+    packageJson.name === 'spokay-app-starter-cli',
+    'Package name should be spokay-app-starter-cli',
+  );
   assert(
     packageJson.bin['spokay-app-starter'] === './bin/cli.js',
     'Binary should point to ./bin/cli.js',

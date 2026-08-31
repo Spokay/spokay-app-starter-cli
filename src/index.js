@@ -1,19 +1,19 @@
-const chalk = require('chalk');
-const ora = require('ora');
-const inquirer = require('inquirer');
-const path = require('path');
-const fs = require('fs');
+import chalk from 'chalk';
+import ora from 'ora';
+import inquirer from 'inquirer';
+import path from 'path';
+import fs from 'fs';
 
 // Import modules
-const { isValidDisplayName, toNpmPackageName } = require('./validators/validators');
-const { promptUserConfiguration } = require('./prompts/user-config');
-const { cloneTemplate } = require('./template/cloner');
-const { replaceTokens } = require('./template/token-replacer');
-const { handleCIFiles } = require('./template/ci-configurator');
-const { generateAppConfig } = require('./config/app-config-generator');
-const { installDependencies } = require('./scaffold/dependency-installer');
-const { initializeGit } = require('./scaffold/git-initializer');
-const { printHeader, printSuccessMessage, printError } = require('./ui/messages');
+import { isValidDisplayName, toNpmPackageName } from './validators/validators.js';
+import { promptUserConfiguration } from './prompts/user-config.js';
+import { cloneTemplate } from './template/cloner.js';
+import { replaceTokens } from './template/token-replacer.js';
+import { handleCIFiles } from './template/ci-configurator.js';
+import { generateAppConfig } from './config/app-config-generator.js';
+import { installDependencies } from './scaffold/dependency-installer.js';
+import { initializeGit } from './scaffold/git-initializer.js';
+import { printHeader, printSuccessMessage, printError } from './ui/messages.js';
 
 /**
  * Main function to create an Angular starter project
@@ -107,6 +107,4 @@ async function createAngularStarter(projectName, options) {
   }
 }
 
-module.exports = {
-  createAngularStarter,
-};
+export { createAngularStarter };

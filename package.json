@@ -3,6 +3,7 @@
   "version": "1.1.1",
   "description": "A CLI for creating Angular starter applications from templates with OIDC authentication support",
   "main": "src/index.js",
+  "type": "module",
   "bin": {
     "angular-starter-oidc": "./bin/cli.js"
   },
@@ -33,13 +34,13 @@
   },
   "homepage": "https://github.com/Spokay/angular-starter-oidc-cli#readme",
   "dependencies": {
-    "commander": "^11.0.0",
-    "chalk": "^4.1.2",
-    "ora": "^5.4.1",
-    "inquirer": "^8.2.5"
+    "chalk": "^6.0.0",
+    "commander": "^15.0.0",
+    "inquirer": "^14.2.0",
+    "ora": "^9.4.1"
   },
   "engines": {
-    "node": ">=14.0.0"
+    "node": ">=22.0.0"
   },
   "prettier": {
     "printWidth": 100,

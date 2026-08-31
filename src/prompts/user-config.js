@@ -1,11 +1,11 @@
-const chalk = require('chalk');
-const inquirer = require('inquirer');
-const {
+import chalk from 'chalk';
+import inquirer from 'inquirer';
+import {
   validateOidcAuthority,
   validateClientId,
   validateUrl,
   validateRequired,
-} = require('../validators/validators');
+} from '../validators/validators.js';
 
 /**
  * Prompt user for all configuration values
@@ -50,14 +50,14 @@ async function promptUserConfiguration(displayName, packageName) {
       default: true,
     },
     {
-      type: 'list',
+      type: 'select',
       name: 'vcsHost',
       message: 'Which VCS host are you using?',
       choices: ['github', 'gitlab'],
       default: 'github',
     },
     {
-      type: 'list',
+      type: 'select',
       name: 'packageManager',
       message: 'Which package manager would you like to use?',
       choices: ['npm', 'pnpm', 'yarn'],
@@ -95,6 +95,4 @@ async function promptUserConfiguration(displayName, packageName) {
   };
 }
 
-module.exports = {
-  promptUserConfiguration,
-};
+export { promptUserConfiguration };

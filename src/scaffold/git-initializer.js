@@ -1,7 +1,7 @@
-const chalk = require('chalk');
-const ora = require('ora');
-const inquirer = require('inquirer');
-const { spawnSync } = require('child_process');
+import chalk from 'chalk';
+import ora from 'ora';
+import inquirer from 'inquirer';
+import { spawnSync } from 'child_process';
 
 /**
  * Initialize git repository and optionally add remote
@@ -92,6 +92,4 @@ async function addGitRemote(targetPath) {
   console.log(chalk.green('✓ Remote added successfully!'));
 }
 
-module.exports = {
-  initializeGit,
-};
+export { initializeGit };

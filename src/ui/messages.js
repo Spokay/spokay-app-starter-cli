@@ -1,4 +1,4 @@
-const chalk = require('chalk');
+import chalk from 'chalk';
 
 /**
  * Print success message with next steps
@@ -40,8 +40,4 @@ function printError(message) {
   console.error(chalk.red(`\n❌ Error: ${message}\n`));
 }
 
-module.exports = {
-  printSuccessMessage,
-  printHeader,
-  printError,
-};
+export { printSuccessMessage, printHeader, printError };

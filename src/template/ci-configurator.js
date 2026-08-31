@@ -1,7 +1,7 @@
-const path = require('path');
-const fs = require('fs');
-const chalk = require('chalk');
-const ora = require('ora');
+import path from 'path';
+import fs from 'fs';
+import chalk from 'chalk';
+import ora from 'ora';
 
 /**
  * Handle CI file selection based on VCS host
@@ -32,6 +32,4 @@ function handleCIFiles(targetPath, vcsHost) {
   }
 }
 
-module.exports = {
-  handleCIFiles,
-};
+export { handleCIFiles };

@@ -24,17 +24,20 @@ function cloneTemplate(templateUrl, targetPath) {
     // Add --no-checkout to prevent any hooks from running during clone
     const result = spawnSync('git', ['clone', '--', templateUrl, targetPath], {
       stdio: 'pipe',
-      encoding: 'utf8'
+      encoding: 'utf8',
     });
 
     if (result.error || result.status !== 0) {
       throw new Error(result.stderr || result.error?.message || 'Git clone failed');
     }
 
-    // Remove .git directory to start fresh
-    const gitDir = path.join(targetPath, '.git');
-    if (fs.existsSync(gitDir)) {
-      fs.rmSync(gitDir, { recursive: true, force: true });
+    // Development artifacts of the template repository itself, which a generated project
+    // must not inherit: its history, and the agent tooling that drives the template.
+    for (const artifact of ['.git', '.claude']) {
+      const dir = path.join(targetPath, artifact);
+      if (fs.existsSync(dir)) {
+        fs.rmSync(dir, { recursive: true, force: true });
+      }
     }
   } catch (error) {
     throw new Error(`Failed to clone template: ${error.message}`);
@@ -42,5 +45,5 @@ function cloneTemplate(templateUrl, targetPath) {
 }
 
 module.exports = {
-  cloneTemplate
+  cloneTemplate,
 };

@@ -23,7 +23,7 @@ All paths below are relative to `angular-starter-cli/`.
 Nothing to `apt-get`; the driver uses only `node:` built-ins. Verified:
 
 ```bash
-node -v     # v22.22.0
+node -v     # v24.20.0  -- the CLI is ESM and requires Node >=22
 tmux -V     # tmux 3.5a   (only needed for the `tui` command)
 git --version
 ```
@@ -123,9 +123,14 @@ npm run format:check
 ## Gotchas
 
 - **Piping answers into stdin does not work.** `printf 'a\nb\n...' | node bin/cli.js create ...`
-  makes inquirer 8 echo the characters into the *wrong* prompt and then hang — the first
+  makes inquirer echo the characters into the *wrong* prompt and then hang — the first
   answer and the second get concatenated into the authority field. Use tmux (a real TTY)
   or the `scaffold` path.
+- **Only `tui` exercises the prompt layer, and it catches things `scaffold` cannot.** The
+  inquirer 14 upgrade dropped the legacy `list` prompt type in favour of `select`; the
+  module pipeline passed every check while the real CLI died with
+  `Prompt type "list" is not registered`. Run `tui` after touching anything under
+  `src/prompts/`.
 - **`isValidGitUrl` rejects filesystem paths.** `--template /path/to/template` and
   `--template file:///path` both fail with `Invalid template URL format`; only
   `https?://`, `git://` and `git@` match. That's why the driver serves a bare clone over

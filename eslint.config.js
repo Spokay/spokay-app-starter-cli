@@ -1,8 +1,8 @@
-// ESLint v9 flat config. This package is CommonJS Node code, not browser code.
-const js = require('@eslint/js');
-const globals = require('globals');
+// ESLint v9 flat config. This package is ESM Node code, not browser code.
+import js from '@eslint/js';
+import globals from 'globals';
 
-module.exports = [
+export default [
   {
     ignores: ['node_modules/**', 'coverage/**', '.claude/**'],
   },
@@ -11,7 +11,7 @@ module.exports = [
     files: ['**/*.js'],
     languageOptions: {
       ecmaVersion: 'latest',
-      sourceType: 'commonjs',
+      sourceType: 'module',
       globals: globals.node,
     },
     rules: {

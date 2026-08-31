@@ -118,7 +118,7 @@ function validateRequired(input, fieldName = 'Field') {
   return true;
 }
 
-module.exports = {
+export {
   toNpmPackageName,
   isValidNpmPackageName,
   isValidDisplayName,

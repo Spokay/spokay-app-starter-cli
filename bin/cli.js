@@ -4,9 +4,9 @@
  * CLI entry point for angular-starter-oidc-cli
  */
 
-const { program } = require('commander');
-const { createAngularStarter } = require('../src/index');
-const packageJson = require('../package.json');
+import { program } from 'commander';
+import { createAngularStarter } from '../src/index.js';
+import packageJson from '../package.json' with { type: 'json' };
 
 program
   .name('angular-starter-oidc')

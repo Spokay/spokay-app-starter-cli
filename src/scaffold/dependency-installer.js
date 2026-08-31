@@ -1,6 +1,6 @@
-const chalk = require('chalk');
-const ora = require('ora');
-const { spawnSync } = require('child_process');
+import chalk from 'chalk';
+import ora from 'ora';
+import { spawnSync } from 'child_process';
 
 /**
  * Install project dependencies using the specified package manager
@@ -57,6 +57,4 @@ async function installDependencies(targetPath, config) {
   }
 }
 
-module.exports = {
-  installDependencies,
-};
+export { installDependencies };

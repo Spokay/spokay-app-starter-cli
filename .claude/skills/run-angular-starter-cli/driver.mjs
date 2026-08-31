@@ -34,10 +34,8 @@ import http from 'node:http';
 import os from 'node:os';
 import path from 'node:path';
 import { execFileSync, fork, spawnSync } from 'node:child_process';
-import { createRequire } from 'node:module';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 
-const require = createRequire(import.meta.url);
 const SKILL_DIR = path.dirname(fileURLToPath(import.meta.url));
 const UNIT = path.resolve(SKILL_DIR, '../../..'); // angular-starter-cli/
 const WORKSPACE = process.env.WORKSPACE ?? path.join(os.tmpdir(), 'run-angular-starter-cli');
@@ -237,11 +235,13 @@ async function scaffold(opts) {
   fs.rmSync(path.dirname(target), { recursive: true, force: true });
   fs.mkdirSync(path.dirname(target), { recursive: true });
 
-  const { cloneTemplate } = require(path.join(UNIT, 'src/template/cloner.js'));
-  const { replaceTokens } = require(path.join(UNIT, 'src/template/token-replacer.js'));
-  const { handleCIFiles } = require(path.join(UNIT, 'src/template/ci-configurator.js'));
-  const { generateAppConfig } = require(path.join(UNIT, 'src/config/app-config-generator.js'));
-  const { installDependencies } = require(path.join(UNIT, 'src/scaffold/dependency-installer.js'));
+  // The CLI is ESM, so these load with dynamic import rather than createRequire.
+  const load = (rel) => import(pathToFileURL(path.join(UNIT, rel)).href);
+  const { cloneTemplate } = await load('src/template/cloner.js');
+  const { replaceTokens } = await load('src/template/token-replacer.js');
+  const { handleCIFiles } = await load('src/template/ci-configurator.js');
+  const { generateAppConfig } = await load('src/config/app-config-generator.js');
+  const { installDependencies } = await load('src/scaffold/dependency-installer.js');
 
   const config = configFor(opts);
   try {

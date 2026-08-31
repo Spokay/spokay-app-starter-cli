@@ -24,8 +24,8 @@ function generateAppConfig(targetPath, config) {
       oidc: {
         authority: config.oidcAuthority,
         clientId: config.oidcClientId,
-        redirectUrl: config.redirectUrl,
-        postLogoutRedirectUri: config.redirectUrl,
+        redirectUrl: config.frontendUrl,
+        postLogoutRedirectUri: config.frontendUrl,
         scope: 'openid profile email',
         responseType: 'code',
         secureRoutes: secureRoutes,

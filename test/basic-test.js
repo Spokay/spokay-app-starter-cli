@@ -5,13 +5,14 @@
 
 import assert from 'assert';
 import fs from 'fs';
+import os from 'os';
 import path from 'path';
 
 import packageJson from '../package.json' with { type: 'json' };
 import * as mainModule from '../src/index.js';
 import * as validators from '../src/validators/validators.js';
 import { cloneTemplate } from '../src/template/cloner.js';
-import { replaceTokens, extractRealm } from '../src/template/token-replacer.js';
+import { replaceTokens, renamePaths, extractRealm } from '../src/template/token-replacer.js';
 import { handleCIFiles } from '../src/template/ci-configurator.js';
 import { generateAppConfig } from '../src/config/app-config-generator.js';
 
@@ -24,12 +25,9 @@ try {
   const packagePath = path.join(__dirname, '../package.json');
   assert(fs.existsSync(packagePath), 'package.json should exist');
 
+  assert(packageJson.name === 'spokay-app-starter', 'Package name should be spokay-app-starter');
   assert(
-    packageJson.name === 'angular-starter-oidc-cli',
-    'Package name should be angular-starter-oidc-cli',
-  );
-  assert(
-    packageJson.bin['angular-starter-oidc'] === './bin/cli.js',
+    packageJson.bin['spokay-app-starter'] === './bin/cli.js',
     'Binary should point to ./bin/cli.js',
   );
 
@@ -54,14 +52,14 @@ try {
   process.exit(1);
 }
 
-// Test 3: Check main module exists and exports createAngularStarter
+// Test 3: Check the main module exposes the public API
 try {
-  assert(
-    typeof mainModule.createAngularStarter === 'function',
-    'Should export createAngularStarter function',
-  );
+  assert(typeof mainModule.createProject === 'function', 'Should export createProject');
+  assert(typeof mainModule.createFullstack === 'function', 'Should export createFullstack');
+  assert(typeof mainModule.generate === 'function', 'Should export generate');
+  assert(Array.isArray(mainModule.templateIds), 'Should export templateIds');
 
-  console.log('✅ Test 3 passed: Main module exports createAngularStarter function');
+  console.log('✅ Test 3 passed: Main module exports the public API');
 } catch (error) {
   console.error('❌ Test 3 failed:', error.message);
   process.exit(1);
@@ -149,6 +147,11 @@ try {
   assert(typeof replaceTokens === 'function', 'Should export replaceTokens function');
   assert(typeof handleCIFiles === 'function', 'Should export handleCIFiles function');
   assert(typeof extractRealm === 'function', 'Should export extractRealm function');
+  assert(typeof renamePaths === 'function', 'Should export renamePaths function');
+
+  // renamePaths must tolerate a template that declares renames for paths it does not have,
+  // which is every template except the Java one.
+  renamePaths(os.tmpdir(), [{ from: '__NOT_THERE__', to: 'somewhere' }]);
 
   // Test realm extraction
   assert(

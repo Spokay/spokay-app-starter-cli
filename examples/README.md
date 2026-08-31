@@ -7,7 +7,7 @@ This directory contains examples of how to use the angular-starter-cli tool.
 ### Create a project with default template
 
 ```bash
-angular-starter create my-app
+angular-starter-oidc create my-app
 ```
 
 This will prompt you to enter a template URL.
@@ -15,13 +15,13 @@ This will prompt you to enter a template URL.
 ### Create a project with a specific template
 
 ```bash
-angular-starter create my-app --template https://github.com/angular/quickstart
+angular-starter-oidc create my-app --template https://github.com/angular/quickstart
 ```
 
 ### Create a project in a specific directory
 
 ```bash
-angular-starter create my-app --template https://github.com/angular/quickstart --path ./projects
+angular-starter-oidc create my-app --template https://github.com/angular/quickstart --path ./projects
 ```
 
 ## Advanced Usage
@@ -31,7 +31,7 @@ angular-starter create my-app --template https://github.com/angular/quickstart -
 You can use any Git repository as a template:
 
 ```bash
-angular-starter create my-app --template https://github.com/yourusername/your-angular-template
+angular-starter-oidc create my-app --template https://github.com/yourusername/your-angular-template
 ```
 
 ### Template Requirements
@@ -75,7 +75,7 @@ Create a `.angular-starter.json` file:
 
 2. Create a new project:
    ```bash
-   angular-starter create my-awesome-app
+   angular-starter-oidc create my-awesome-app
    ```
 
 3. Enter template URL when prompted or use `--template` flag

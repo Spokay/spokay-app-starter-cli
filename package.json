@@ -7,7 +7,10 @@
     "angular-starter-oidc": "./bin/cli.js"
   },
   "scripts": {
-    "test": "node test/basic-test.js"
+    "test": "node test/basic-test.js",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
   },
   "keywords": [
     "angular",
@@ -37,5 +40,15 @@
   },
   "engines": {
     "node": ">=14.0.0"
+  },
+  "prettier": {
+    "printWidth": 100,
+    "singleQuote": true
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.38.0",
+    "eslint": "^9.38.0",
+    "globals": "^15.14.0",
+    "prettier": "^3.3.3"
   }
 }

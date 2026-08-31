@@ -11,7 +11,9 @@ function printSuccessMessage(projectName, config) {
   console.log(chalk.cyan.bold('Next steps:'));
   console.log(chalk.white(`  cd ${projectName}`));
   console.log(chalk.white(`  ${config.pkgMgrRun} start          # Start dev server`));
-  console.log(chalk.white(`  ${config.pkgMgrRun} commit         # Make a commit (uses commitizen)`));
+  console.log(
+    chalk.white(`  ${config.pkgMgrRun} commit         # Make a commit (uses commitizen)`),
+  );
 
   console.log(chalk.cyan.bold('\nConfiguration:'));
   console.log(chalk.white(`  - OIDC: ${config.oidcAuthority}`));
@@ -41,5 +43,5 @@ function printError(message) {
 module.exports = {
   printSuccessMessage,
   printHeader,
-  printError
+  printError,
 };

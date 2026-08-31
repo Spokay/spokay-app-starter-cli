@@ -1,0 +1,11 @@
+node_modules/
+coverage/
+package-lock.json
+
+# agent tooling, not shipped source
+.claude/
+
+# `__TOKEN__` is also markdown emphasis syntax, so prettier rewrites a bare occurrence
+# into `\***\*TOKEN\*\***`. The docs here are full of token names; one outside a code span
+# would be silently corrupted.
+*.md

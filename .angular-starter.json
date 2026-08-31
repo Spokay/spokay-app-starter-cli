@@ -1,6 +1,0 @@
-{
-  "defaultTemplate": "https://github.com/angular/quickstart",
-  "templates": {
-    "quickstart": "https://github.com/angular/quickstart"
-  }
-}

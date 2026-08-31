@@ -165,16 +165,20 @@ const packageName = toNpmPackageName(displayName);  // "my-awesome-app"
 ### 2. Template Acquisition
 - Clone from GitHub: `https://github.com/Spokay/angular-starter-app-template`
 - Or download specific tag/branch
-- Remove `.git` directory from template
+- Remove the template repo's own development artifacts so the generated project does not
+  inherit them: `.git` (history) and `.claude` (the run skill that drives the *template*)
 
 ### 3. Token Replacement
 Search and replace in these files:
 ```javascript
 const filesToReplace = [
   'package.json',
+  'package-lock.json',          // "name": "__APP_NAME__", twice
   'angular.json',
   'src/app/app.spec.ts',
   'src/index.html',
+  'src/app/layout/header/header.html',
+  'src/app/layout/footer/footer.html',
   'README.md',
   'public/assets/app-config.json',
   'src/proxy.conf.json',       // Always process (contains __BACKEND_URL__)
@@ -281,10 +285,11 @@ Documentation: See README.md
 
 ## Important Implementation Notes
 
-### 1. Don't Include Template's package-lock.json
-- The template's `package-lock.json` has `__APP_NAME__` as package name
-- After token replacement, run `npm install` to generate a fresh lock file
-- Or exclude it when copying the template
+### 1. package-lock.json is token-replaced, not discarded
+- The template's `package-lock.json` has `__APP_NAME__` as its package name, in two places
+- It is in `filesToReplace`, so the name is rewritten like any other token
+- Deleting it instead would hand every generated project a fresh, untested dependency
+  resolution; rewriting keeps the tree reproducible
 
 ### 2. Preserve File Permissions
 - `.husky/` hook files must be executable
@@ -323,7 +328,8 @@ Documentation: See README.md
 # Check all tokens replaced
 grep -r "__.*__" <new-project> --exclude-dir=node_modules
 
-# Should return 0 results (except in CLAUDE.md documentation)
+# Should return results only in files that *document* the templating -- CLAUDE.md and
+# .prettierignore -- never in source, config or CI files.
 ```
 
 ## Common CLI Patterns

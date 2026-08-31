@@ -25,6 +25,10 @@ async function replaceTokens(targetPath, config) {
     // Files to process for token replacement
     const filesToReplace = [
       'package.json',
+      // carries "name": "__APP_NAME__" at the root and under packages[""]. Rewriting it
+      // keeps the generated project's dependency tree reproducible; deleting the lock file
+      // would hand every new project a fresh, untested resolution instead.
+      'package-lock.json',
       'angular.json',
       'src/app/app.spec.ts',
       'src/index.html',
@@ -32,7 +36,7 @@ async function replaceTokens(targetPath, config) {
       'src/app/layout/footer/footer.html',
       'README.md',
       'public/assets/app-config.json',
-      'src/proxy.conf.json'  // Always process, contains __BACKEND_URL__
+      'src/proxy.conf.json', // Always process, contains __BACKEND_URL__
     ];
 
     // Add CI files based on VCS choice
@@ -48,25 +52,25 @@ async function replaceTokens(targetPath, config) {
       : '';
 
     const secureRoutes = config.useProxy
-      ? '"/api"'  // Relative path for proxy
+      ? '"/api"' // Relative path for proxy
       : `"${config.resourceServerUrl}"`; // Full URL for direct calls
 
     // Token mapping
     const tokens = {
-      '__APP_NAME__': config.packageName, // npm-friendly package name
-      '__APP_DISPLAY_NAME__': config.displayName, // user-friendly display name
-      '__OIDC_AUTHORITY__': config.oidcAuthority,
-      '__CLIENT_ID__': config.oidcClientId,
-      '__REDIRECT_URL__': config.redirectUrl,
-      '__POST_LOGOUT_REDIRECT_URL__': config.redirectUrl,
-      '__BACKEND_URL__': config.resourceServerUrl,
-      '__SECURE_ROUTES__': secureRoutes,
-      '__PROXY_CONFIG__': proxyConfig,
-      '__REALM__': extractRealm(config.oidcAuthority),
-      '__NODE_VERSION__': config.nodeVersion,
-      '__PKG_MGR__': config.packageManager,
-      '__PKG_MGR_RUN__': config.pkgMgrRun,
-      '__CLI_PACKAGE__': config.cliPackage
+      __APP_NAME__: config.packageName, // npm-friendly package name
+      __APP_DISPLAY_NAME__: config.displayName, // user-friendly display name
+      __OIDC_AUTHORITY__: config.oidcAuthority,
+      __CLIENT_ID__: config.oidcClientId,
+      __REDIRECT_URL__: config.redirectUrl,
+      __POST_LOGOUT_REDIRECT_URL__: config.redirectUrl,
+      __BACKEND_URL__: config.resourceServerUrl,
+      __SECURE_ROUTES__: secureRoutes,
+      __PROXY_CONFIG__: proxyConfig,
+      __REALM__: extractRealm(config.oidcAuthority),
+      __NODE_VERSION__: config.nodeVersion,
+      __PKG_MGR__: config.packageManager,
+      __PKG_MGR_RUN__: config.pkgMgrRun,
+      __CLI_PACKAGE__: config.cliPackage,
     };
 
     // Replace tokens in each file
@@ -93,5 +97,5 @@ async function replaceTokens(targetPath, config) {
 
 module.exports = {
   replaceTokens,
-  extractRealm
+  extractRealm,
 };

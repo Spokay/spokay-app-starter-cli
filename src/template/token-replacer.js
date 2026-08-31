@@ -1,7 +1,7 @@
-const path = require('path');
-const fs = require('fs');
-const chalk = require('chalk');
-const ora = require('ora');
+import path from 'path';
+import fs from 'fs';
+import chalk from 'chalk';
+import ora from 'ora';
 
 /**
  * Extract realm from OIDC authority URL
@@ -95,7 +95,4 @@ async function replaceTokens(targetPath, config) {
   }
 }
 
-module.exports = {
-  replaceTokens,
-  extractRealm,
-};
+export { replaceTokens, extractRealm };

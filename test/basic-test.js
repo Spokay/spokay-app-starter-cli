@@ -3,9 +3,19 @@
  * Run with: node test/basic-test.js
  */
 
-const assert = require('assert');
-const path = require('path');
-const fs = require('fs');
+import assert from 'assert';
+import fs from 'fs';
+import path from 'path';
+
+import packageJson from '../package.json' with { type: 'json' };
+import * as mainModule from '../src/index.js';
+import * as validators from '../src/validators/validators.js';
+import { cloneTemplate } from '../src/template/cloner.js';
+import { replaceTokens, extractRealm } from '../src/template/token-replacer.js';
+import { handleCIFiles } from '../src/template/ci-configurator.js';
+import { generateAppConfig } from '../src/config/app-config-generator.js';
+
+const __dirname = import.meta.dirname;
 
 console.log('🧪 Running basic structure tests...\n');
 
@@ -14,7 +24,6 @@ try {
   const packagePath = path.join(__dirname, '../package.json');
   assert(fs.existsSync(packagePath), 'package.json should exist');
 
-  const packageJson = require('../package.json');
   assert(
     packageJson.name === 'angular-starter-oidc-cli',
     'Package name should be angular-starter-oidc-cli',
@@ -47,7 +56,6 @@ try {
 
 // Test 3: Check main module exists and exports createAngularStarter
 try {
-  const mainModule = require('../src/index.js');
   assert(
     typeof mainModule.createAngularStarter === 'function',
     'Should export createAngularStarter function',
@@ -61,7 +69,6 @@ try {
 
 // Test 4: Check validators module
 try {
-  const validators = require('../src/validators/validators.js');
   assert(typeof validators.isValidGitUrl === 'function', 'Should export isValidGitUrl function');
   assert(
     typeof validators.isValidNpmPackageName === 'function',
@@ -138,10 +145,6 @@ try {
 
 // Test 5: Check template modules
 try {
-  const { cloneTemplate } = require('../src/template/cloner.js');
-  const { replaceTokens, extractRealm } = require('../src/template/token-replacer.js');
-  const { handleCIFiles } = require('../src/template/ci-configurator.js');
-
   assert(typeof cloneTemplate === 'function', 'Should export cloneTemplate function');
   assert(typeof replaceTokens === 'function', 'Should export replaceTokens function');
   assert(typeof handleCIFiles === 'function', 'Should export handleCIFiles function');
@@ -165,7 +168,6 @@ try {
 
 // Test 6: Check config module
 try {
-  const { generateAppConfig } = require('../src/config/app-config-generator.js');
   assert(typeof generateAppConfig === 'function', 'Should export generateAppConfig function');
 
   console.log('✅ Test 6 passed: Config module exports correct functions');

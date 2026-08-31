@@ -1,7 +1,7 @@
-const path = require('path');
-const fs = require('fs');
-const { spawnSync } = require('child_process');
-const { isValidGitUrl } = require('../validators/validators');
+import path from 'path';
+import fs from 'fs';
+import { spawnSync } from 'child_process';
+import { isValidGitUrl } from '../validators/validators.js';
 
 /**
  * Clone the template repository
@@ -44,6 +44,4 @@ function cloneTemplate(templateUrl, targetPath) {
   }
 }
 
-module.exports = {
-  cloneTemplate,
-};
+export { cloneTemplate };

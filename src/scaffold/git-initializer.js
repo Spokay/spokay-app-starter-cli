@@ -6,18 +6,20 @@ import { spawnSync } from 'child_process';
 /**
  * Initialize git repository and optionally add remote
  * @param {string} targetPath - Path of the project
+ * @param {object} options - `assumeYes` skips both prompts, for unattended runs
  * @returns {Promise<void>}
  */
-async function initializeGit(targetPath) {
-  // Ask if user wants to initialize git
-  const { initGit } = await inquirer.prompt([
-    {
-      type: 'confirm',
-      name: 'initGit',
-      message: 'Initialize git repository?',
-      default: true,
-    },
-  ]);
+async function initializeGit(targetPath, { assumeYes = false } = {}) {
+  const { initGit } = assumeYes
+    ? { initGit: true }
+    : await inquirer.prompt([
+        {
+          type: 'confirm',
+          name: 'initGit',
+          message: 'Initialize git repository?',
+          default: true,
+        },
+      ]);
 
   if (!initGit) {
     return;
@@ -44,8 +46,8 @@ async function initializeGit(targetPath) {
 
     gitSpinner.succeed(chalk.green('Git repository initialized!'));
 
-    // Ask for remote URL
-    await addGitRemote(targetPath);
+    // Adding a remote is interactive by nature; skip it when running unattended.
+    if (!assumeYes) await addGitRemote(targetPath);
   } catch {
     gitSpinner.fail(chalk.red('Failed to initialize git'));
   }

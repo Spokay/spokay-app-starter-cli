@@ -1,5 +1,6 @@
-import path from 'path';
 import fs from 'fs';
+import path from 'path';
+
 import chalk from 'chalk';
 import ora from 'ora';
 
@@ -9,83 +10,50 @@ import ora from 'ora';
  * @returns {string} Realm name or 'my-realm' as default
  */
 function extractRealm(authority) {
-  const match = authority.match(/\/realms\/([^\/]+)/);
+  const match = authority.match(/\/realms\/([^/]+)/);
   return match ? match[1] : 'my-realm';
 }
 
 /**
- * Replace all tokens in template files
+ * Rename templated directories, e.g. `src/main/java/__BASE_PACKAGE__` -> `.../com/acme/api`.
+ *
+ * Must run *before* token replacement: Java rejects sources whose directory no longer
+ * matches their `package` declaration, and replacing contents first would produce exactly
+ * that mismatch.
+ *
  * @param {string} targetPath - Path of the cloned project
- * @param {object} config - Configuration object
+ * @param {Array<{from: string, to: string}>} renames - Project-relative paths
  */
-async function replaceTokens(targetPath, config) {
+function renamePaths(targetPath, renames = []) {
+  for (const { from, to } of renames) {
+    const source = path.join(targetPath, from);
+    if (!fs.existsSync(source)) continue;
+    const destination = path.join(targetPath, to);
+    fs.mkdirSync(path.dirname(destination), { recursive: true });
+    fs.renameSync(source, destination);
+  }
+}
+
+/**
+ * Replace `__TOKEN__` placeholders across a template's files.
+ *
+ * @param {string} targetPath - Path of the cloned project
+ * @param {object} tokens - Map of `__TOKEN__` to its replacement
+ * @param {string[]} files - Project-relative files to process; missing ones are skipped
+ */
+async function replaceTokens(targetPath, tokens, files) {
   const spinner = ora('Replacing configuration tokens...').start();
 
   try {
-    // Files to process for token replacement
-    const filesToReplace = [
-      'package.json',
-      // carries "name": "__APP_NAME__" at the root and under packages[""]. Rewriting it
-      // keeps the generated project's dependency tree reproducible; deleting the lock file
-      // would hand every new project a fresh, untested resolution instead.
-      'package-lock.json',
-      'angular.json',
-      'src/app/app.spec.ts',
-      'src/index.html',
-      'src/app/layout/header/header.html',
-      'src/app/layout/footer/footer.html',
-      'README.md',
-      'public/assets/app-config.json',
-      'src/proxy.conf.json', // Always process, contains __BACKEND_URL__
-    ];
-
-    // Add CI files based on VCS choice
-    if (config.vcsHost === 'github') {
-      filesToReplace.push('.github/workflows/ci.yml');
-    } else if (config.vcsHost === 'gitlab') {
-      filesToReplace.push('.gitlab-ci.yml');
-    }
-
-    // Conditional values based on proxy configuration
-    const proxyConfig = config.useProxy
-      ? ',\n            "proxyConfig": "src/proxy.conf.json"'
-      : '';
-
-    const secureRoutes = config.useProxy
-      ? '"/api"' // Relative path for proxy
-      : `"${config.resourceServerUrl}"`; // Full URL for direct calls
-
-    // Token mapping
-    const tokens = {
-      __APP_NAME__: config.packageName, // npm-friendly package name
-      __APP_DISPLAY_NAME__: config.displayName, // user-friendly display name
-      __OIDC_AUTHORITY__: config.oidcAuthority,
-      __CLIENT_ID__: config.oidcClientId,
-      __REDIRECT_URL__: config.redirectUrl,
-      __POST_LOGOUT_REDIRECT_URL__: config.redirectUrl,
-      __BACKEND_URL__: config.resourceServerUrl,
-      __SECURE_ROUTES__: secureRoutes,
-      __PROXY_CONFIG__: proxyConfig,
-      __REALM__: extractRealm(config.oidcAuthority),
-      __NODE_VERSION__: config.nodeVersion,
-      __PKG_MGR__: config.packageManager,
-      __PKG_MGR_RUN__: config.pkgMgrRun,
-      __CLI_PACKAGE__: config.cliPackage,
-    };
-
-    // Replace tokens in each file
-    for (const file of filesToReplace) {
+    for (const file of files) {
       const filePath = path.join(targetPath, file);
-      if (fs.existsSync(filePath)) {
-        let content = fs.readFileSync(filePath, 'utf8');
+      if (!fs.existsSync(filePath)) continue;
 
-        // Replace all tokens
-        for (const [token, value] of Object.entries(tokens)) {
-          content = content.replace(new RegExp(token, 'g'), value);
-        }
-
-        fs.writeFileSync(filePath, content, 'utf8');
+      let content = fs.readFileSync(filePath, 'utf8');
+      for (const [token, value] of Object.entries(tokens)) {
+        content = content.replaceAll(token, value);
       }
+      fs.writeFileSync(filePath, content, 'utf8');
     }
 
     spinner.succeed(chalk.green('Configuration tokens replaced!'));
@@ -95,4 +63,4 @@ async function replaceTokens(targetPath, config) {
   }
 }
 
-export { replaceTokens, extractRealm };
+export { replaceTokens, renamePaths, extractRealm };

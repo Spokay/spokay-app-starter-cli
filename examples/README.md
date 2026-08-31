@@ -1,92 +1,40 @@
 # Examples
 
-This directory contains examples of how to use the angular-starter-cli tool.
-
-## Basic Usage
-
-### Create a project with default template
+## Scaffold an Angular SPA
 
 ```bash
-angular-starter-oidc create my-app
+spokay-app-starter create angular "My App"
 ```
 
-This will prompt you to enter a template URL.
-
-### Create a project with a specific template
+## Scaffold a resource server
 
 ```bash
-angular-starter-oidc create my-app --template https://github.com/angular/quickstart
+spokay-app-starter create resource-server "My API"
 ```
 
-### Create a project in a specific directory
+## Scaffold both, wired together
 
 ```bash
-angular-starter-oidc create my-app --template https://github.com/angular/quickstart --path ./projects
+spokay-app-starter create fullstack "My Project"
 ```
 
-## Advanced Usage
+Produces `my-project/frontend` and `my-project/backend` sharing one OIDC configuration,
+plus a README explaining how to start each.
 
-### Using a custom template repository
-
-You can use any Git repository as a template:
+## Unattended
 
 ```bash
-angular-starter-oidc create my-app --template https://github.com/yourusername/your-angular-template
+spokay-app-starter create angular "My App" \
+  --oidc-authority https://idp.example.com/realms/demo \
+  --client-id my-spa \
+  --vcs gitlab --pkg pnpm --no-proxy \
+  --yes
 ```
 
-### Template Requirements
+## A different template repository
 
-Your template repository should:
-- Be a valid Git repository
-- Contain a `package.json` file (optional, but recommended)
-- Include Angular project structure
-
-## Configuration File Examples
-
-### Simple Configuration
-
-Create a `.angular-starter.json` file:
-
-```json
-{
-  "defaultTemplate": "https://github.com/angular/quickstart"
-}
+```bash
+spokay-app-starter create angular "My App" --template https://github.com/you/your-fork.git
 ```
 
-### Multiple Template Presets
-
-```json
-{
-  "defaultTemplate": "https://github.com/angular/quickstart",
-  "templates": {
-    "basic": "https://github.com/angular/quickstart",
-    "material": "https://github.com/yourusername/your-material-template",
-    "enterprise": "https://github.com/yourusername/enterprise-template"
-  }
-}
-```
-
-## Workflow Example
-
-1. Install the CLI globally:
-   ```bash
-   npm install -g angular-starter-cli
-   ```
-
-2. Create a new project:
-   ```bash
-   angular-starter-oidc create my-awesome-app
-   ```
-
-3. Enter template URL when prompted or use `--template` flag
-
-4. Navigate to your project and install dependencies:
-   ```bash
-   cd my-awesome-app
-   npm install
-   ```
-
-5. Start development:
-   ```bash
-   npm start
-   ```
+The URL must be a git URL — `https://`, `git://` or `git@`. A filesystem path is rejected.

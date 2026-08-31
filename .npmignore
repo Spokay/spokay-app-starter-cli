@@ -36,5 +36,4 @@ coverage/
 examples/
 
 # Documentation that's not needed in package
-.angular-starter.json
 CLAUDE.md

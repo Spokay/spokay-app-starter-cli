@@ -10,6 +10,8 @@ SPA, a Spring Boot resource server, or both wired to each other. The driver
 - `scaffold` / `fullstack` / `matrix` — call `generate()` from `src/` directly (fast, no TTY)
 - `tui` — drive the real `bin/cli.js` through **tmux**, answering the actual prompts
 - `flags` — run the real binary fully flagged with stdin not a TTY
+- `e2e` — scaffold a pair, **run both**, log in headlessly, and call the generated backend
+  with the token the generated frontend obtained
 
 Both templates are served from a **local dumb-HTTP git server** built out of the sibling
 checkouts, so runs are offline and test the CLI against the templates it must stay in sync
@@ -89,6 +91,7 @@ verifying /tmp/run-spokay-app-starter-cli/out/my-test-app
 | `driver.mjs fullstack [--proxy false]` | both templates + cross-wiring assertions | ~20s |
 | `driver.mjs tui [angular\|resource-server\|fullstack]` | real prompts over tmux | 2–5 min |
 | `driver.mjs flags` | real binary, every answer a flag, no TTY | ~10s |
+| `driver.mjs e2e` | scaffold a pair, run both, log in, call the backend — **the only check that runs the generated projects** | 5–7 min |
 | `driver.mjs serve` | just the local git server (foreground) | — |
 | `driver.mjs clean` | delete the workspace | — |
 
@@ -97,7 +100,39 @@ Generated projects land in `/tmp/run-spokay-app-starter-cli/out/` (override with
 
 **Which path for which change:** the registry, `generator.js`, `token-replacer.js` or a
 template descriptor → `matrix`. Anything under `src/prompts/` or `bin/cli.js` → **`tui`**,
-because the other paths bypass the prompt layer entirely. Flag handling → `flags`.
+because the other paths bypass the prompt layer entirely. Flag handling → `flags`. Anything
+touching how the two projects are wired to each other → **`e2e`**.
+
+### The end-to-end run
+
+```bash
+node .claude/skills/run-spokay-app-starter-cli/driver.mjs e2e
+```
+
+Everything else checks generated *files*. This one runs the generated *projects*: it stands
+up a full stub OIDC provider (`e2e.mjs`), scaffolds a fullstack pair against it, boots the
+generated Spring Boot backend and `ng serve`s the generated Angular frontend, logs in
+through the real authorization-code + PKCE flow in headless Chrome, and then calls the
+backend through the dev proxy with the access token the frontend actually received.
+
+```
+✓ backend rejects an unauthenticated call
+✓ the generated frontend completes a login against the generated backend's IdP
+✓ the frontend shows the identity the IdP issued
+✓ the backend accepts the access token the frontend obtained  via the dev proxy -> ["Music 1","Music 2","Music 3"]
+✓ the proxied response is the backend's data
+
+5/5 checks passed
+```
+
+Screenshots land in `/tmp/run-spokay-app-starter-cli/shots/`, logs in `backend.log` and
+`frontend.log` beside them. It is slow mostly because the scaffold runs a real `npm install`
+in the generated frontend.
+
+**What it does not prove:** the Angular template has no UI that calls the resource server, so
+the request is issued with the token read out of session storage rather than through
+Angular's `HttpClient`. The library's interceptor — the thing that would attach the token in
+a real app — is therefore not exercised.
 
 ### Driving the CLI by hand
 
@@ -152,6 +187,10 @@ npm run format:check
   the wrapper and `.mvn/`, plus `CLAUDE.md` and `.prettierignore`, which document tokens.
 - **Verify against the answers actually given.** The `tui` script types the Java groupId and
   base package rather than accepting defaults, so both paths assert the same values.
+- **The e2e run needs three ports plus Chrome's**: 9999 (stub IdP), 8080 (generated
+  backend), 4200 (generated frontend), 9222 (CDP). `mvnw` and `ng serve` both fork children,
+  so the driver spawns them `detached` and kills the process group; killing only the parent
+  leaks a JVM on 8080.
 - **`pkill -f` matches this shell's own wrapper**, killing the calling Bash tool call (exit
   144, no output). Kill by PID from `ss -ltnp` instead.
 

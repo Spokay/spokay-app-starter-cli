@@ -124,9 +124,9 @@ function startGitServer() {
 const NOT_PLACEHOLDERS = ['CLAUDE.md', '.prettierignore', 'mvnw', 'mvnw.cmd'];
 
 const results = [];
-function check(name, fn) {
+async function check(name, fn) {
   try {
-    const detail = fn();
+    const detail = await fn();
     results.push({ ok: true, name });
     console.log(`✓ ${name}${detail ? `  ${detail}` : ''}`);
   } catch (e) {
@@ -159,23 +159,23 @@ function noTokensLeft(dir) {
   return `(only in docs/vendored: ${files.join(', ') || 'nowhere'})`;
 }
 
-function verifyAngular(dir, answers) {
-  check('angular: development artifacts of the template are not inherited', () => {
+async function verifyAngular(dir, answers) {
+  await check('angular: development artifacts of the template are not inherited', () => {
     if (fs.existsSync(path.join(dir, '.git', 'refs', 'remotes', 'origin')))
       throw new Error('origin refs survived');
     if (fs.existsSync(path.join(dir, '.claude'))) throw new Error('.claude survived');
   });
-  check('angular: package.json and lock file name replaced', () => {
+  await check('angular: package.json and lock file name replaced', () => {
     eq(json(dir, 'package.json').name, answers.packageName, 'package.json name');
     eq(json(dir, 'package-lock.json').name, answers.packageName, 'lock name');
   });
-  check('angular: angular.json is valid JSON again', () => {
+  await check('angular: angular.json is valid JSON again', () => {
     const a = json(dir, 'angular.json');
     const opts = a.projects[answers.packageName].architect.serve.options;
     eq(opts.proxyConfig, answers.useProxy ? 'src/proxy.conf.json' : undefined, 'proxyConfig');
     return `proxyConfig=${JSON.stringify(opts.proxyConfig)}`;
   });
-  check('angular: app-config.json matches the answers', () =>
+  await check('angular: app-config.json matches the answers', () =>
     eq(
       json(dir, 'public/assets/app-config.json'),
       {
@@ -192,36 +192,36 @@ function verifyAngular(dir, answers) {
       },
       'app-config.json',
     ));
-  check(`angular: CI configured for ${answers.vcsHost}`, () => {
+  await check(`angular: CI configured for ${answers.vcsHost}`, () => {
     const gh = fs.existsSync(path.join(dir, '.github/workflows/ci.yml'));
     const gl = fs.existsSync(path.join(dir, '.gitlab-ci.yml'));
     eq({ gh, gl }, answers.vcsHost === 'github' ? { gh: true, gl: false } : { gh: false, gl: true }, 'CI files');
     const ci = read(dir, answers.vcsHost === 'github' ? '.github/workflows/ci.yml' : '.gitlab-ci.yml');
     if (!ci.includes(answers.nodeVersion)) throw new Error('node version not replaced');
   });
-  check('angular: proxy config present only when the proxy is on', () => {
+  await check('angular: proxy config present only when the proxy is on', () => {
     const exists = fs.existsSync(path.join(dir, 'src/proxy.conf.json'));
     eq(exists, answers.useProxy, 'src/proxy.conf.json exists');
     if (exists) eq(json(dir, 'src/proxy.conf.json')['/api/*'].target, answers.resourceServerUrl, 'proxy target');
   });
-  check('angular: no unexpected __TOKEN__ left', () => noTokensLeft(dir));
+  await check('angular: no unexpected __TOKEN__ left', () => noTokensLeft(dir));
 }
 
-function verifyResourceServer(dir, answers) {
+async function verifyResourceServer(dir, answers) {
   const pkgPath = answers.basePackage.split('.').join('/');
-  check('resource-server: package directory expanded from the token', () => {
+  await check('resource-server: package directory expanded from the token', () => {
     if (fs.existsSync(path.join(dir, 'src/main/java/__BASE_PACKAGE__')))
       throw new Error('__BASE_PACKAGE__ directory still present');
     if (!fs.existsSync(path.join(dir, 'src/main/java', pkgPath, 'Application.java')))
       throw new Error(`expected src/main/java/${pkgPath}/Application.java`);
     return pkgPath;
   });
-  check('resource-server: sources declare the chosen package', () => {
+  await check('resource-server: sources declare the chosen package', () => {
     const src = read(dir, `src/main/java/${pkgPath}/Application.java`);
     if (!src.includes(`package ${answers.basePackage};`))
       throw new Error(`package declaration is ${src.split('\n')[0]}`);
   });
-  check('resource-server: pom coordinates replaced', () => {
+  await check('resource-server: pom coordinates replaced', () => {
     const pom = read(dir, 'pom.xml');
     for (const [needle, what] of [
       [`<groupId>${answers.groupId}</groupId>`, 'groupId'],
@@ -230,7 +230,7 @@ function verifyResourceServer(dir, answers) {
     ])
       if (!pom.includes(needle)) throw new Error(`${what} not replaced`);
   });
-  check('resource-server: application.properties wired to the answers', () => {
+  await check('resource-server: application.properties wired to the answers', () => {
     const p = props(dir, 'src/main/resources/application.properties');
     eq(p['server.port'], new URL(answers.resourceServerUrl).port, 'server.port');
     eq(p['server.servlet.context-path'], answers.contextPath, 'context-path');
@@ -239,7 +239,7 @@ function verifyResourceServer(dir, answers) {
     if (!p['oauth2.jwk-set-uri'].includes(answers.oidcAuthority))
       throw new Error(`jwk-set-uri is ${p['oauth2.jwk-set-uri']}`);
   });
-  check('resource-server: no unexpected __TOKEN__ left', () => noTokensLeft(dir));
+  await check('resource-server: no unexpected __TOKEN__ left', () => noTokensLeft(dir));
 }
 
 // ---------------------------------------------------------- scaffolding -----
@@ -276,7 +276,7 @@ async function scaffold(id, overrides) {
   console.log(`template  : ${templateUrl(id)}`);
   await scaffoldOne(id, answers, dir);
   console.log(`\nverifying ${dir}`);
-  (id === 'angular' ? verifyAngular : verifyResourceServer)(dir, answers);
+  await (id === 'angular' ? verifyAngular : verifyResourceServer)(dir, answers);
   return dir;
 }
 
@@ -296,8 +296,8 @@ async function fullstack(overrides) {
   });
 
   console.log(`\nverifying ${root}`);
-  verifyAngular(frontend, { ...answers, packageName: `${PACKAGE_NAME}-frontend` });
-  verifyResourceServer(backend, { ...answers, packageName: `${PACKAGE_NAME}-backend` });
+  await verifyAngular(frontend, { ...answers, packageName: `${PACKAGE_NAME}-frontend` });
+  await verifyResourceServer(backend, { ...answers, packageName: `${PACKAGE_NAME}-backend` });
 
   // The point of the command: one set of answers, two projects that agree.
   check('fullstack: both sides point at the same OIDC authority', () => {
@@ -306,24 +306,24 @@ async function fullstack(overrides) {
     if (!back.includes(front)) throw new Error(`frontend ${front} vs backend ${back}`);
     return front;
   });
-  check('fullstack: both sides use the same client id', () => {
+  await check('fullstack: both sides use the same client id', () => {
     const front = json(frontend, 'public/assets/app-config.json').oidc.clientId;
     const back = props(backend, 'src/main/resources/application.properties')['oauth2.client-id'];
     if (!back.includes(front)) throw new Error(`frontend ${front} vs backend ${back}`);
     return front;
   });
-  check("fullstack: the backend's port is where the frontend expects it", () => {
+  await check("fullstack: the backend's port is where the frontend expects it", () => {
     const expected = new URL(json(frontend, 'public/assets/app-config.json').resourceServer.baseUrl).port;
     eq(props(backend, 'src/main/resources/application.properties')['server.port'], expected, 'server.port');
     return expected;
   });
-  check("fullstack: the backend allows the frontend's origin", () =>
+  await check("fullstack: the backend allows the frontend's origin", () =>
     eq(
       props(backend, 'src/main/resources/application.properties')['cors.allowed-origins'],
       answers.frontendUrl,
       'cors.allowed-origins',
     ));
-  check('fullstack: a root README explains how to run both', () => {
+  await check('fullstack: a root README explains how to run both', () => {
     const readme = read(root, 'README.md');
     if (!readme.includes(answers.oidcAuthority)) throw new Error('README does not name the authority');
   });
@@ -422,11 +422,115 @@ async function flagsRun() {
   console.log(out.split('\n').filter((l) => l.trim()).slice(-6).join('\n'));
 
   console.log(`\nverifying ${dir}`);
-  verifyResourceServer(dir, answersFor('resource-server'));
-  check('flags: --no-git left the project without a repository', () => {
+  await verifyResourceServer(dir, answersFor('resource-server'));
+  await check('flags: --no-git left the project without a repository', () => {
     if (fs.existsSync(path.join(dir, '.git'))) throw new Error('.git was created despite --no-git');
   });
   return dir;
+}
+
+// ---------------------------------------------------------------- e2e -------
+
+/**
+ * Scaffold a fullstack pair, run both, log in, and call the generated backend with the
+ * token the generated frontend obtained. This is the only check that proves the two halves
+ * work *together* rather than agreeing on paper.
+ */
+async function e2e() {
+  const e = await import(pathToFileURL(path.join(SKILL_DIR, 'e2e.mjs')).href);
+  fs.rmSync(OUT, { recursive: true, force: true });
+  fs.mkdirSync(OUT, { recursive: true });
+
+  const root = path.join(OUT, PACKAGE_NAME);
+  const frontend = path.join(root, 'frontend');
+  const backend = path.join(root, 'backend');
+  const answers = {
+    displayName: DISPLAY_NAME,
+    packageName: PACKAGE_NAME,
+    oidcAuthority: e.AUTHORITY,
+    oidcClientId: e.CLIENT_ID,
+    frontendUrl: e.FRONTEND_URL,
+    resourceServerUrl: e.BACKEND_URL,
+    ...ANGULAR_ANSWERS,
+    ...RS_ANSWERS,
+  };
+
+  const idp = await e.startIdp();
+  console.log(`stub IdP  : ${e.AUTHORITY}`);
+
+  console.log('scaffolding (installs the frontend\'s dependencies, this is the slow part)…');
+  const { generateFullstack } = await load('src/commands/fullstack.js');
+  await generateFullstack(answers, root, {
+    angularUrl: templateUrl('angular'),
+    resourceServerUrl: templateUrl('resource-server'),
+  });
+
+  const api = e.startBackend(backend, path.join(WORKSPACE, 'backend.log'));
+  const web = e.startFrontend(frontend, path.join(WORKSPACE, 'frontend.log'));
+  let cdp;
+  const cleanup = () => {
+    try { cdp?.close(); } catch { /* gone */ }
+    for (const child of [api, web]) {
+      try { process.kill(-child.pid, 'SIGKILL'); } catch { /* gone */ }
+    }
+    idp.close();
+  };
+  process.on('SIGINT', () => { cleanup(); process.exit(130); });
+
+  try {
+    console.log(`backend   : ${e.BACKEND_URL}  (log: ${WORKSPACE}/backend.log)`);
+    await e.waitForHttp(`${e.BACKEND_URL}/api/musics`, 240_000, 'generated backend');
+    console.log(`frontend  : ${e.FRONTEND_URL}  (log: ${WORKSPACE}/frontend.log)`);
+    await e.waitForHttp(e.FRONTEND_URL, 240_000, 'generated frontend');
+    console.log('both up\n');
+
+    await check('backend rejects an unauthenticated call', async () => {
+      const res = await fetch(`${e.BACKEND_URL}/api/musics`);
+      if (res.status !== 401) throw new Error(`expected 401, got ${res.status}`);
+    });
+
+    cdp = await e.Cdp.launch(WORKSPACE);
+    await cdp.send('Page.navigate', { url: e.FRONTEND_URL });
+    await cdp.waitFor(`document.querySelector('app-login-page button')`, { label: 'login page' });
+    await cdp.shot(path.join(WORKSPACE, 'shots'), 'e2e-01-login');
+
+    await cdp.eval(`document.querySelector('app-login-page button').click()`);
+    await cdp.waitFor(`location.pathname === '/home'`, { label: 'redirect to /home' });
+    await cdp.waitFor(`document.body.innerText.includes('Is Authenticated: true')`, {
+      label: 'authenticated home',
+    });
+    await check('the generated frontend completes a login against the generated backend\'s IdP', () => true);
+    await cdp.shot(path.join(WORKSPACE, 'shots'), 'e2e-02-home');
+
+    await check('the frontend shows the identity the IdP issued', async () => {
+      const body = await cdp.eval('document.body.innerText');
+      if (!body.includes(e.USER.name)) throw new Error(`"${e.USER.name}" not rendered`);
+    });
+
+    // The payoff: a token minted by the IdP the *frontend* logged into, presented to the
+    // *backend* the CLI wired to that same IdP, through the dev proxy the CLI configured.
+    const apiResult = await cdp.eval(`(async () => {
+      const key = Object.keys(sessionStorage).find(k => (sessionStorage.getItem(k) || '').includes('access_token'));
+      const token = JSON.parse(sessionStorage.getItem(key))?.authnResult?.access_token;
+      if (!token) return { error: 'no access token in session storage' };
+      const res = await fetch('/api/musics', { headers: { Authorization: 'Bearer ' + token } });
+      return { status: res.status, body: await res.text() };
+    })()`);
+
+    await check('the backend accepts the access token the frontend obtained', () => {
+      if (apiResult.error) throw new Error(apiResult.error);
+      if (apiResult.status !== 200) throw new Error(`got ${apiResult.status}: ${apiResult.body}`);
+      return `via the dev proxy -> ${apiResult.body}`;
+    });
+    await check('the proxied response is the backend\'s data', () => {
+      if (apiResult.body !== '["Music 1","Music 2","Music 3"]')
+        throw new Error(`unexpected body ${apiResult.body}`);
+    });
+  } finally {
+    cleanup();
+  }
+  console.log(`\nscreenshots in ${WORKSPACE}/shots`);
+  return root;
 }
 
 // -------------------------------------------------------------- main --------
@@ -459,6 +563,10 @@ switch (cmd) {
     await withTemplates(() => flagsRun());
     finish();
     break;
+  case 'e2e':
+    await withTemplates(() => e2e());
+    finish();
+    break;
   case 'matrix':
     await withTemplates(async () => {
       for (const proxy of [true, false])
@@ -474,10 +582,10 @@ switch (cmd) {
     const id = process.argv[3]?.startsWith('-') ? 'angular' : (process.argv[3] ?? 'angular');
     const dir = await withTemplates(() => tui(id));
     if (id === 'fullstack') {
-      verifyAngular(path.join(dir, 'frontend'), answersFor('fullstack', { packageName: `${PACKAGE_NAME}-frontend` }));
-      verifyResourceServer(path.join(dir, 'backend'), answersFor('fullstack', { packageName: `${PACKAGE_NAME}-backend` }));
+      await verifyAngular(path.join(dir, 'frontend'), answersFor('fullstack', { packageName: `${PACKAGE_NAME}-frontend` }));
+      await verifyResourceServer(path.join(dir, 'backend'), answersFor('fullstack', { packageName: `${PACKAGE_NAME}-backend` }));
     } else {
-      (id === 'angular' ? verifyAngular : verifyResourceServer)(dir, answersFor(id));
+      await (id === 'angular' ? verifyAngular : verifyResourceServer)(dir, answersFor(id));
     }
     finish();
     break;
@@ -492,6 +600,6 @@ switch (cmd) {
     console.log(`removed ${WORKSPACE}`);
     break;
   default:
-    console.log('usage: driver.mjs <scaffold|fullstack|matrix|tui|flags|serve|clean> [angular|resource-server|fullstack]');
+    console.log('usage: driver.mjs <scaffold|fullstack|matrix|tui|flags|e2e|serve|clean> [angular|resource-server|fullstack]');
     process.exit(2);
 }

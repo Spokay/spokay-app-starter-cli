@@ -16,7 +16,7 @@ function generateAppConfig(targetPath, config) {
 
     // Determine secureRoutes based on proxy configuration
     const secureRoutes = config.useProxy
-      ? ['/api']  // Relative path for proxy setup
+      ? ['/api'] // Relative path for proxy setup
       : [config.resourceServerUrl]; // Full URL for direct calls
 
     // Create the config object
@@ -28,11 +28,11 @@ function generateAppConfig(targetPath, config) {
         postLogoutRedirectUri: config.redirectUrl,
         scope: 'openid profile email',
         responseType: 'code',
-        secureRoutes: secureRoutes
+        secureRoutes: secureRoutes,
       },
       resourceServer: {
-        baseUrl: config.resourceServerUrl
-      }
+        baseUrl: config.resourceServerUrl,
+      },
     };
 
     // Ensure directory exists
@@ -52,5 +52,5 @@ function generateAppConfig(targetPath, config) {
 }
 
 module.exports = {
-  generateAppConfig
+  generateAppConfig,
 };

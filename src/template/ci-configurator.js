@@ -27,11 +27,11 @@ function handleCIFiles(targetPath, vcsHost) {
     }
 
     spinner.succeed(chalk.green(`CI configured for ${vcsHost}!`));
-  } catch (error) {
+  } catch {
     spinner.warn(chalk.yellow('Could not fully configure CI files'));
   }
 }
 
 module.exports = {
-  handleCIFiles
+  handleCIFiles,
 };

@@ -12,12 +12,18 @@ async function installDependencies(targetPath, config) {
   // Check if package manager is installed
   const pkgMgrCheck = spawnSync(config.packageManager, ['--version'], {
     stdio: 'pipe',
-    encoding: 'utf8'
+    encoding: 'utf8',
   });
 
   if (pkgMgrCheck.error || pkgMgrCheck.status !== 0) {
-    console.log(chalk.yellow(`\n⚠️  Warning: ${config.packageManager} is not installed on your system.`));
-    console.log(chalk.yellow(`Please install ${config.packageManager} and run '${config.packageManager} install' manually.\n`));
+    console.log(
+      chalk.yellow(`\n⚠️  Warning: ${config.packageManager} is not installed on your system.`),
+    );
+    console.log(
+      chalk.yellow(
+        `Please install ${config.packageManager} and run '${config.packageManager} install' manually.\n`,
+      ),
+    );
     return false;
   }
 
@@ -29,18 +35,22 @@ async function installDependencies(targetPath, config) {
     const installResult = spawnSync(config.packageManager, installArgs, {
       cwd: targetPath,
       stdio: 'pipe',
-      encoding: 'utf8'
+      encoding: 'utf8',
     });
 
     if (installResult.error || installResult.status !== 0) {
       installSpinner.fail(chalk.red('Failed to install dependencies'));
-      console.log(chalk.yellow(`\nPlease run '${config.packageManager} install' manually in the project directory.\n`));
+      console.log(
+        chalk.yellow(
+          `\nPlease run '${config.packageManager} install' manually in the project directory.\n`,
+        ),
+      );
       return false;
     } else {
       installSpinner.succeed(chalk.green('Dependencies installed!'));
       return true;
     }
-  } catch (error) {
+  } catch {
     installSpinner.fail(chalk.red('Failed to install dependencies'));
     console.log(chalk.yellow(`\nPlease run '${config.packageManager} install' manually.\n`));
     return false;
@@ -48,5 +58,5 @@ async function installDependencies(targetPath, config) {
 }
 
 module.exports = {
-  installDependencies
+  installDependencies,
 };

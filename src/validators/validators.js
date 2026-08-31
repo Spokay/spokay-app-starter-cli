@@ -12,15 +12,17 @@
  * @returns {string} npm-friendly package name
  */
 function toNpmPackageName(displayName) {
-  return displayName
-    .trim()
-    // Replace spaces, underscores, and camelCase boundaries with hyphens
-    .replace(/([a-z])([A-Z])/g, '$1-$2') // camelCase to kebab-case
-    .replace(/[\s_]+/g, '-') // spaces and underscores to hyphens
-    .toLowerCase() // lowercase
-    .replace(/[^a-z0-9-]/g, '') // remove invalid characters
-    .replace(/-+/g, '-') // collapse multiple hyphens
-    .replace(/^-|-$/g, ''); // trim leading/trailing hyphens
+  return (
+    displayName
+      .trim()
+      // Replace spaces, underscores, and camelCase boundaries with hyphens
+      .replace(/([a-z])([A-Z])/g, '$1-$2') // camelCase to kebab-case
+      .replace(/[\s_]+/g, '-') // spaces and underscores to hyphens
+      .toLowerCase() // lowercase
+      .replace(/[^a-z0-9-]/g, '') // remove invalid characters
+      .replace(/-+/g, '-') // collapse multiple hyphens
+      .replace(/^-|-$/g, '')
+  ); // trim leading/trailing hyphens
 }
 
 /**
@@ -54,7 +56,8 @@ function isValidDisplayName(displayName) {
  */
 function isValidGitUrl(url) {
   // Allow HTTPS, SSH, and Git protocol URLs
-  const gitUrlPattern = /^(https?:\/\/|git@|git:\/\/)[\w\.\-@:\/~]+\.git$|^(https?:\/\/|git@|git:\/\/)[\w\.\-@:\/~]+$/i;
+  const gitUrlPattern =
+    /^(https?:\/\/|git@|git:\/\/)[\w\.\-@:\/~]+\.git$|^(https?:\/\/|git@|git:\/\/)[\w\.\-@:\/~]+$/i;
   return gitUrlPattern.test(url);
 }
 
@@ -123,5 +126,5 @@ module.exports = {
   validateOidcAuthority,
   validateClientId,
   validateUrl,
-  validateRequired
+  validateRequired,
 };

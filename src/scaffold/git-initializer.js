@@ -15,8 +15,8 @@ async function initializeGit(targetPath) {
       type: 'confirm',
       name: 'initGit',
       message: 'Initialize git repository?',
-      default: true
-    }
+      default: true,
+    },
   ]);
 
   if (!initGit) {
@@ -39,14 +39,14 @@ async function initializeGit(targetPath) {
     spawnSync('git', ['add', '.'], { cwd: targetPath, stdio: 'pipe' });
     spawnSync('git', ['commit', '-m', 'chore: initial commit from angular-starter-cli'], {
       cwd: targetPath,
-      stdio: 'pipe'
+      stdio: 'pipe',
     });
 
     gitSpinner.succeed(chalk.green('Git repository initialized!'));
 
     // Ask for remote URL
     await addGitRemote(targetPath);
-  } catch (error) {
+  } catch {
     gitSpinner.fail(chalk.red('Failed to initialize git'));
   }
 }
@@ -62,8 +62,8 @@ async function addGitRemote(targetPath) {
       type: 'confirm',
       name: 'addRemote',
       message: 'Add git remote?',
-      default: false
-    }
+      default: false,
+    },
   ]);
 
   if (!addRemote) {
@@ -80,18 +80,18 @@ async function addGitRemote(targetPath) {
           return 'Remote URL is required';
         }
         return true;
-      }
-    }
+      },
+    },
   ]);
 
   spawnSync('git', ['remote', 'add', 'origin', remoteUrl], {
     cwd: targetPath,
-    stdio: 'pipe'
+    stdio: 'pipe',
   });
 
   console.log(chalk.green('✓ Remote added successfully!'));
 }
 
 module.exports = {
-  initializeGit
+  initializeGit,
 };

@@ -53,8 +53,8 @@ async function createAngularStarter(projectName, options) {
           type: 'confirm',
           name: 'overwrite',
           message: `Directory "${packageName}" already exists. Overwrite?`,
-          default: false
-        }
+          default: false,
+        },
       ]);
 
       if (!overwrite) {
@@ -70,7 +70,8 @@ async function createAngularStarter(projectName, options) {
     const config = await promptUserConfiguration(displayName, packageName);
 
     // Get template URL
-    const templateUrl = options.template || 'https://github.com/Spokay/angular-starter-app-template.git';
+    const templateUrl =
+      options.template || 'https://github.com/Spokay/angular-starter-app-template.git';
 
     // Clone template repository
     const spinner = ora('Cloning template repository...').start();
@@ -100,7 +101,6 @@ async function createAngularStarter(projectName, options) {
 
     // Success message
     printSuccessMessage(packageName, config);
-
   } catch (error) {
     printError(error.message);
     process.exit(1);
@@ -108,5 +108,5 @@ async function createAngularStarter(projectName, options) {
 }
 
 module.exports = {
-  createAngularStarter
+  createAngularStarter,
 };

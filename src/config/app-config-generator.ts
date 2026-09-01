@@ -3,23 +3,23 @@ import fs from 'fs';
 import chalk from 'chalk';
 import ora from 'ora';
 
+import type { ProjectAnswers } from '../types.js';
+
 /**
- * Generate app-config.json with user values
- * @param {string} targetPath - Path of the cloned project
- * @param {object} config - Configuration object
+ * Write `public/assets/app-config.json`, the file the generated app fetches at runtime.
+ *
+ * The app is built once and deployed to many environments by swapping this file, so it is
+ * generated from the answers rather than baked into the bundle.
  */
-function generateAppConfig(targetPath, config) {
+function generateAppConfig(targetPath: string, config: ProjectAnswers): void {
   const spinner = ora('Generating app-config.json...').start();
 
   try {
     const appConfigPath = path.join(targetPath, 'public', 'assets', 'app-config.json');
 
-    // Determine secureRoutes based on proxy configuration
-    const secureRoutes = config.useProxy
-      ? ['/api'] // Relative path for proxy setup
-      : [config.resourceServerUrl]; // Full URL for direct calls
+    // Relative path when the dev proxy is on, the full URL when requests go direct.
+    const secureRoutes = config.useProxy ? ['/api'] : [config.resourceServerUrl];
 
-    // Create the config object
     const appConfig = {
       oidc: {
         authority: config.oidcAuthority,
@@ -41,7 +41,6 @@ function generateAppConfig(targetPath, config) {
       fs.mkdirSync(appConfigDir, { recursive: true });
     }
 
-    // Write the config file
     fs.writeFileSync(appConfigPath, JSON.stringify(appConfig, null, 2), 'utf8');
 
     spinner.succeed(chalk.green('app-config.json generated!'));

@@ -1,6 +1,12 @@
 /**
- * Basic test file to validate the CLI structure
- * Run with: node test/basic-test.js
+ * Basic test file to validate the CLI structure.
+ *
+ * Compiled by `tsconfig.test.json` into `dist-test/` and run from there, against the build
+ * output in `dist/` — so what is asserted is the artifact users actually install. Both
+ * directories sit one level under the package root, which is why the relative paths below
+ * resolve the same way from the source and from the compiled test.
+ *
+ * Run with: npm test
  */
 
 import assert from 'assert';
@@ -8,15 +14,21 @@ import fs from 'fs';
 import os from 'os';
 import path from 'path';
 
-import packageJson from '../package.json' with { type: 'json' };
-import * as mainModule from '../src/index.js';
-import * as validators from '../src/validators/validators.js';
-import { cloneTemplate } from '../src/template/cloner.js';
-import { replaceTokens, renamePaths, extractRealm } from '../src/template/token-replacer.js';
-import { handleCIFiles } from '../src/template/ci-configurator.js';
-import { generateAppConfig } from '../src/config/app-config-generator.js';
+import * as mainModule from '../dist/index.js';
+import * as validators from '../dist/validators/validators.js';
+import { cloneTemplate } from '../dist/template/cloner.js';
+import { replaceTokens, renamePaths, extractRealm } from '../dist/template/token-replacer.js';
+import { handleCIFiles } from '../dist/template/ci-configurator.js';
+import { generateAppConfig } from '../dist/config/app-config-generator.js';
 
 const __dirname = import.meta.dirname;
+
+const packageJson = JSON.parse(
+  fs.readFileSync(path.join(__dirname, '../package.json'), 'utf8'),
+) as { name: string; bin: Record<string, string> };
+
+const messageOf = (error: unknown): string =>
+  error instanceof Error ? error.message : String(error);
 
 console.log('🧪 Running basic structure tests...\n');
 
@@ -30,28 +42,29 @@ try {
     'Package name should be spokay-app-starter-cli',
   );
   assert(
-    packageJson.bin['spokay-app-starter'] === './bin/cli.js',
-    'Binary should point to ./bin/cli.js',
+    packageJson.bin['spokay-app-starter'] === './dist/cli.js',
+    'Binary should point to ./dist/cli.js',
   );
 
   console.log('✅ Test 1 passed: package.json is valid');
 } catch (error) {
-  console.error('❌ Test 1 failed:', error.message);
+  console.error('❌ Test 1 failed:', messageOf(error));
   process.exit(1);
 }
 
-// Test 2: Check CLI entry point exists
+// Test 2: Check the built CLI entry point
 try {
-  const cliPath = path.join(__dirname, '../bin/cli.js');
+  const cliPath = path.join(__dirname, '../dist/cli.js');
   assert(fs.existsSync(cliPath), 'CLI entry point should exist');
 
   const cliContent = fs.readFileSync(cliPath, 'utf8');
+  // tsc must preserve the shebang, or npm links a binary the shell cannot exec.
   assert(cliContent.includes('#!/usr/bin/env node'), 'CLI should have shebang');
   assert(cliContent.includes('commander'), 'CLI should use commander');
 
   console.log('✅ Test 2 passed: CLI entry point is valid');
 } catch (error) {
-  console.error('❌ Test 2 failed:', error.message);
+  console.error('❌ Test 2 failed:', messageOf(error));
   process.exit(1);
 }
 
@@ -64,7 +77,7 @@ try {
 
   console.log('✅ Test 3 passed: Main module exports the public API');
 } catch (error) {
-  console.error('❌ Test 3 failed:', error.message);
+  console.error('❌ Test 3 failed:', messageOf(error));
   process.exit(1);
 }
 
@@ -140,7 +153,7 @@ try {
 
   console.log('✅ Test 4 passed: Validators module works correctly');
 } catch (error) {
-  console.error('❌ Test 4 failed:', error.message);
+  console.error('❌ Test 4 failed:', messageOf(error));
   process.exit(1);
 }
 
@@ -168,7 +181,7 @@ try {
 
   console.log('✅ Test 5 passed: Template modules export correct functions');
 } catch (error) {
-  console.error('❌ Test 5 failed:', error.message);
+  console.error('❌ Test 5 failed:', messageOf(error));
   process.exit(1);
 }
 
@@ -178,7 +191,7 @@ try {
 
   console.log('✅ Test 6 passed: Config module exports correct functions');
 } catch (error) {
-  console.error('❌ Test 6 failed:', error.message);
+  console.error('❌ Test 6 failed:', messageOf(error));
   process.exit(1);
 }
 
@@ -192,7 +205,7 @@ try {
 
   console.log('✅ Test 7 passed: .gitignore is valid');
 } catch (error) {
-  console.error('❌ Test 7 failed:', error.message);
+  console.error('❌ Test 7 failed:', messageOf(error));
   process.exit(1);
 }
 

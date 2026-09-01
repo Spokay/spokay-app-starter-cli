@@ -6,10 +6,14 @@
  * interesting breakage lives (inquirer 14 dropping the `list` type was invisible to
  * everything except a real TTY). So this driver keeps two ways in:
  *
- *   scaffold : calls generate() from src/ directly with an answers object. Fast, no TTY.
- *              The path for changes to the registry, token-replacer or generator.
- *   tui      : drives the real `bin/cli.js` through tmux send-keys, answering the actual
- *              prompts. The path for changes to prompts/ or bin/cli.js.
+ *   scaffold : calls generate() from the build output directly with an answers object.
+ *              Fast, no TTY. The path for changes to the registry, token-replacer or
+ *              generator.
+ *   tui      : drives the real `dist/cli.js` through tmux send-keys, answering the actual
+ *              prompts. The path for changes to prompts/ or cli.ts.
+ *
+ * The CLI is TypeScript, so every mode below runs against `dist/`; the driver rebuilds it
+ * first rather than testing whatever happened to be built last.
  *
  * Both templates are served over a local dumb-HTTP git server built from the sibling
  * checkouts, so runs are offline and test the CLI against the templates it must stay in
@@ -256,9 +260,12 @@ async function withTemplates(run) {
 
 const load = (rel) => import(pathToFileURL(path.join(UNIT, rel)).href);
 
+/** Compile the CLI. Every mode reads `dist/`, so a stale build would test the wrong code. */
+const build = () => execFileSync('npm', ['run', 'build'], { cwd: UNIT, stdio: 'inherit' });
+
 async function scaffoldOne(id, answers, targetPath) {
-  const { getTemplate } = await load('src/templates/registry.js');
-  const { generate } = await load('src/generator.js');
+  const { getTemplate } = await load('dist/templates/registry.js');
+  const { generate } = await load('dist/generator.js');
   return generate(getTemplate(id), answers, targetPath, { templateUrl: templateUrl(id) });
 }
 
@@ -289,7 +296,7 @@ async function fullstack(overrides) {
   const backend = path.join(root, 'backend');
 
   // The real composition, so the cross-wiring and the root README are what ship.
-  const { generateFullstack } = await load('src/commands/fullstack.js');
+  const { generateFullstack } = await load('dist/commands/fullstack.js');
   await generateFullstack(answers, root, {
     angularUrl: templateUrl('angular'),
     resourceServerUrl: templateUrl('resource-server'),
@@ -360,8 +367,8 @@ async function tui(id) {
   sh('new-session', '-d', '-s', SESSION, '-x', '200', '-y', '50');
 
   const command = id === 'fullstack'
-    ? `cd ${UNIT} && node bin/cli.js create fullstack ${JSON.stringify(DISPLAY_NAME)} --path ${OUT}`
-    : `cd ${UNIT} && node bin/cli.js create ${id} ${JSON.stringify(DISPLAY_NAME)} --template ${templateUrl(id)} --path ${OUT}`;
+    ? `cd ${UNIT} && node dist/cli.js create fullstack ${JSON.stringify(DISPLAY_NAME)} --path ${OUT}`
+    : `cd ${UNIT} && node dist/cli.js create ${id} ${JSON.stringify(DISPLAY_NAME)} --template ${templateUrl(id)} --path ${OUT}`;
   sh('send-keys', '-t', SESSION, command, 'Enter');
 
   await answer('OIDC authority URL', { text: SHARED.oidcAuthority });
@@ -405,7 +412,7 @@ async function flagsRun() {
   const dir = path.join(OUT, PACKAGE_NAME);
 
   const args = [
-    'bin/cli.js', 'create', 'resource-server', DISPLAY_NAME,
+    'dist/cli.js', 'create', 'resource-server', DISPLAY_NAME,
     '--template', templateUrl('resource-server'),
     '--path', OUT,
     '--oidc-authority', SHARED.oidcAuthority,
@@ -459,7 +466,7 @@ async function e2e() {
   console.log(`stub IdP  : ${e.AUTHORITY}`);
 
   console.log('scaffolding (installs the frontend\'s dependencies, this is the slow part)…');
-  const { generateFullstack } = await load('src/commands/fullstack.js');
+  const { generateFullstack } = await load('dist/commands/fullstack.js');
   await generateFullstack(answers, root, {
     angularUrl: templateUrl('angular'),
     resourceServerUrl: templateUrl('resource-server'),
@@ -539,6 +546,11 @@ const cmd = process.argv[2];
 const proxyFlag = flag('proxy', 'true') !== 'false';
 const vcsFlag = flag('vcs', 'github');
 const overrides = { useProxy: proxyFlag, vcsHost: vcsFlag };
+
+// The CLI is TypeScript: every mode that touches it reads `dist/`, so compile first rather
+// than testing whatever was built last. `serve-only` is the forked git server, and
+// `serve`/`clean` never load the CLI.
+if (!['serve-only', 'serve', 'clean'].includes(cmd)) build();
 
 const finish = () => {
   const failed = results.filter((r) => !r.ok);

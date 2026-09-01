@@ -4,14 +4,12 @@ import path from 'path';
 import chalk from 'chalk';
 import ora from 'ora';
 
-/**
- * Extract realm from OIDC authority URL
- * @param {string} authority - OIDC authority URL
- * @returns {string} Realm name or 'my-realm' as default
- */
-function extractRealm(authority) {
+import type { Rename } from '../types.js';
+
+/** Extract the realm from an OIDC authority URL, defaulting to `my-realm`. */
+function extractRealm(authority: string): string {
   const match = authority.match(/\/realms\/([^/]+)/);
-  return match ? match[1] : 'my-realm';
+  return match?.[1] ?? 'my-realm';
 }
 
 /**
@@ -21,10 +19,10 @@ function extractRealm(authority) {
  * matches their `package` declaration, and replacing contents first would produce exactly
  * that mismatch.
  *
- * @param {string} targetPath - Path of the cloned project
- * @param {Array<{from: string, to: string}>} renames - Project-relative paths
+ * @param targetPath - Path of the cloned project
+ * @param renames - Project-relative paths; a `from` that is not there is skipped
  */
-function renamePaths(targetPath, renames = []) {
+function renamePaths(targetPath: string, renames: readonly Rename[] = []): void {
   for (const { from, to } of renames) {
     const source = path.join(targetPath, from);
     if (!fs.existsSync(source)) continue;
@@ -37,11 +35,15 @@ function renamePaths(targetPath, renames = []) {
 /**
  * Replace `__TOKEN__` placeholders across a template's files.
  *
- * @param {string} targetPath - Path of the cloned project
- * @param {object} tokens - Map of `__TOKEN__` to its replacement
- * @param {string[]} files - Project-relative files to process; missing ones are skipped
+ * @param targetPath - Path of the cloned project
+ * @param tokens - Map of `__TOKEN__` to its replacement
+ * @param files - Project-relative files to process; missing ones are skipped
  */
-async function replaceTokens(targetPath, tokens, files) {
+async function replaceTokens(
+  targetPath: string,
+  tokens: Record<string, string>,
+  files: readonly string[],
+): Promise<void> {
   const spinner = ora('Replacing configuration tokens...').start();
 
   try {

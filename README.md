@@ -9,10 +9,11 @@ server, or both wired to each other.
 npm install -g spokay-app-starter-cli   # installs the `spokay-app-starter` command
 ```
 
-Local development:
+Local development — the CLI is TypeScript, so it has to be built before it can be run:
 
 ```bash
 npm install
+npm run build
 npm link
 ```
 
@@ -68,7 +69,8 @@ tells you which flags are missing.
 
 ## Adding a template
 
-Templates are data, not code paths. `src/templates/<id>.js` describes one:
+Templates are data, not code paths. `src/templates/<id>.ts` describes one, typed as
+`TemplateDescriptor` (`src/types.ts`):
 
 | field | purpose |
 |---|---|
@@ -81,13 +83,16 @@ Templates are data, not code paths. `src/templates/<id>.js` describes one:
 | `postSteps` | extra work, e.g. deleting the unused CI config |
 | `install(answers)` | package manager to run, or `null` |
 
-Register it in `src/templates/registry.js`. The generator and the CLI pick it up with no
-further changes.
+Register it in `src/templates/registry.ts`. The generator and the CLI pick it up with no
+further changes. The answers a template may read are the fields of `ProjectAnswers`; a
+question whose `name` is not one of them does not compile.
 
 ## Development
 
 ```bash
-npm test              # structural and validator tests
+npm run build         # tsc -> dist/, which is what ships
+npm run typecheck     # tsc --noEmit over src/
+npm test              # builds, then runs the tests against dist/
 npm run lint
 npm run format:check
 ```

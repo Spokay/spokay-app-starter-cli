@@ -1,0 +1,13 @@
+{
+  // The tests import the *build output*, so they check the artifact users install rather
+  // than the sources. `dist-test/` is one level under the root like `test/`, which keeps
+  // `../dist/...` and the `import.meta.dirname`-relative reads resolving either way.
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "rootDir": "test",
+    "outDir": "dist-test",
+    "declaration": false,
+    "declarationMap": false
+  },
+  "include": ["test"]
+}

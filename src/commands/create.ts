@@ -9,11 +9,19 @@ import { getTemplate } from '../templates/registry.js';
 import { initializeGit } from '../scaffold/git-initializer.js';
 import { printHeader, printError } from '../ui/messages.js';
 import { isValidDisplayName } from '../validators/validators.js';
+import type { CreateOptions, ProjectAnswers, TemplateDescriptor } from '../types.js';
+
+import type { Command } from 'commander';
 
 /**
  * `create <template> <project-name>` — scaffold a single template.
  */
-async function createProject(templateId, projectName, options, command) {
+async function createProject(
+  templateId: string,
+  projectName: string,
+  options: CreateOptions,
+  command?: Command,
+): Promise<void> {
   printHeader();
 
   try {
@@ -28,15 +36,13 @@ async function createProject(templateId, projectName, options, command) {
     console.log(chalk.cyan(`   Project: ${displayName}`));
     console.log(chalk.gray(`   Directory: ${packageName}\n`));
 
-    const answers = {
-      displayName,
-      packageName,
-      ...(await ask(
-        [...sharedQuestions, ...template.questions],
-        presetsFrom(options, command),
-        options.yes,
-      )),
-    };
+    // The resolved names are answers too — feeding them in as presets keeps one source of
+    // truth for the object, instead of spreading it over the prompt result afterwards.
+    const answers = await ask(
+      [...sharedQuestions, ...template.questions],
+      { displayName, packageName, ...presetsFrom(options, command) },
+      options.yes,
+    );
 
     const targetPath = path.resolve(options.path || '.', packageName);
     ensureTarget(targetPath, { force: options.force });
@@ -47,7 +53,7 @@ async function createProject(templateId, projectName, options, command) {
 
     printNextSteps(template, packageName, answers);
   } catch (error) {
-    printError(error.message);
+    printError(error instanceof Error ? error.message : String(error));
     process.exit(1);
   }
 }
@@ -59,8 +65,8 @@ async function createProject(templateId, projectName, options, command) {
  * default by commander, so reading the value alone would silently answer the proxy question
  * on every run and the prompt would never appear.
  */
-function presetsFrom(options, command) {
-  const map = {
+function presetsFrom(options: CreateOptions, command?: Command): Partial<ProjectAnswers> {
+  const map: Partial<Record<keyof CreateOptions, keyof ProjectAnswers>> = {
     oidcAuthority: 'oidcAuthority',
     clientId: 'oidcClientId',
     frontendUrl: 'frontendUrl',
@@ -74,16 +80,25 @@ function presetsFrom(options, command) {
     javaVersion: 'javaVersion',
     contextPath: 'contextPath',
   };
-  const presets = {};
-  const suppliedOnCli = (flag) =>
+  const presets: Record<string, unknown> = {};
+  const suppliedOnCli = (flag: keyof CreateOptions): boolean =>
     command ? command.getOptionValueSource(flag) === 'cli' : options[flag] !== undefined;
-  for (const [flag, answer] of Object.entries(map)) {
+  for (const [flag, answer] of Object.entries(map) as [
+    keyof CreateOptions,
+    keyof ProjectAnswers,
+  ][]) {
+    // Commander does not validate enum-ish flags like `--vcs`, so what lands here is
+    // whatever the user typed — the same contract the prompts had before this was typed.
     if (suppliedOnCli(flag)) presets[answer] = options[flag];
   }
-  return presets;
+  return presets as Partial<ProjectAnswers>;
 }
 
-function printNextSteps(template, dirName, answers) {
+function printNextSteps(
+  template: TemplateDescriptor,
+  dirName: string,
+  answers: ProjectAnswers,
+): void {
   console.log(chalk.green.bold(`\n✓ Project "${dirName}" created successfully!\n`));
   console.log(chalk.cyan.bold('Next steps:'));
   console.log(chalk.white(`  cd ${dirName}`));

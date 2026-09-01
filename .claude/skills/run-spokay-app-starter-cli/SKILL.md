@@ -7,8 +7,8 @@ description: Build, run, and drive the spokay-app-starter CLI. Use when asked to
 SPA, a Spring Boot resource server, or both wired to each other. The driver
 (`.claude/skills/run-spokay-app-starter-cli/driver.mjs`) offers three ways in:
 
-- `scaffold` / `fullstack` / `matrix` — call `generate()` from `src/` directly (fast, no TTY)
-- `tui` — drive the real `bin/cli.js` through **tmux**, answering the actual prompts
+- `scaffold` / `fullstack` / `matrix` — call `generate()` from `dist/` directly (fast, no TTY)
+- `tui` — drive the real `dist/cli.js` through **tmux**, answering the actual prompts
 - `flags` — run the real binary fully flagged with stdin not a TTY
 - `e2e` — scaffold a pair, **run both**, log in headlessly, and call the generated backend
   with the token the generated frontend obtained
@@ -20,6 +20,9 @@ with.
 All paths below are relative to `spokay-app-starter-cli/`.
 
 ## Prerequisites
+
+The CLI is TypeScript and every mode runs the build output, so the driver runs
+`npm run build` itself before anything that loads `dist/` — no stale build can be tested.
 
 Nothing to `apt-get`; the driver uses only `node:` built-ins. Verified:
 
@@ -37,7 +40,8 @@ The sibling template checkouts must exist next to this repo:
 
 ```bash
 npm install
-npm link      # optional: exposes the global `spokay-app-starter` command
+npm run build   # the driver does this too; needed by hand only for `node dist/cli.js`
+npm link        # optional: exposes the global `spokay-app-starter` command
 ```
 
 ## Run (agent path)
@@ -99,7 +103,7 @@ Generated projects land in `/tmp/run-spokay-app-starter-cli/out/` (override with
 `WORKSPACE=`); `GIT_PORT=` defaults to 8899.
 
 **Which path for which change:** the registry, `generator.js`, `token-replacer.js` or a
-template descriptor → `matrix`. Anything under `src/prompts/` or `bin/cli.js` → **`tui`**,
+template descriptor → `matrix`. Anything under `src/prompts/` or `src/cli.ts` → **`tui`**,
 because the other paths bypass the prompt layer entirely. Flag handling → `flags`. Anything
 touching how the two projects are wired to each other → **`e2e`**.
 
@@ -141,7 +145,7 @@ node .claude/skills/run-spokay-app-starter-cli/driver.mjs serve &
 # angular          http://localhost:8899/angular.git
 # resource-server  http://localhost:8899/resource-server.git
 
-node bin/cli.js create fullstack "My App" --path /tmp/out \
+node dist/cli.js create fullstack "My App" --path /tmp/out \
   --oidc-authority http://localhost:9999/realms/demo --client-id demo --yes --no-git
 ```
 
@@ -157,7 +161,8 @@ Default template URLs point at GitHub, so this needs network.
 ## Test
 
 ```bash
-npm test              # 7 structural/validator tests
+npm test              # builds, then 7 structural/validator tests against `dist/`
+npm run typecheck     # `tsc --noEmit` over `src/`
 npm run lint
 npm run format:check
 ```
@@ -167,7 +172,7 @@ npm run format:check
 - **Only `tui` exercises the prompt layer, and it catches what nothing else can.** inquirer
   14 dropped the legacy `list` prompt type; the module pipeline passed every check while the
   real CLI died with `Prompt type "list" is not registered`. Run `tui` after touching
-  `src/prompts/` or `bin/cli.js`.
+  `src/prompts/` or `src/cli.ts`.
 - **Negated commander options carry a default.** `--no-proxy` leaves `options.proxy === true`
   with source `default`, and `--no-git` sets `options.git === false` (there is no
   `options.noGit`). Presets are filtered on

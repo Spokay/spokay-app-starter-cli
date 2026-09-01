@@ -11,13 +11,20 @@ import { initializeGit } from '../scaffold/git-initializer.js';
 import { presetsFrom } from './create.js';
 import { printHeader, printError } from '../ui/messages.js';
 import { isValidDisplayName } from '../validators/validators.js';
+import type { CreateOptions, ProjectAnswers } from '../types.js';
+
+import type { Command } from 'commander';
 
 /**
  * `create fullstack <project-name>` — both templates under one directory, wired to each
  * other. The shared OIDC questions are asked once, which is the whole point: a hand-wired
  * pair drifts the moment one side's authority or client id is edited.
  */
-async function createFullstack(projectName, options, command) {
+async function createFullstack(
+  projectName: string,
+  options: CreateOptions,
+  command?: Command,
+): Promise<void> {
   printHeader();
 
   try {
@@ -33,16 +40,15 @@ async function createFullstack(projectName, options, command) {
     console.log(chalk.cyan(`   Project: ${displayName}`));
     console.log(chalk.gray(`   Directory: ${packageName}/{frontend,backend}\n`));
 
-    const presets = presetsFrom(options, command);
     const answers = await ask(
       [...sharedQuestions, ...angular.questions, ...resourceServer.questions],
-      presets,
+      { displayName, packageName, ...presetsFrom(options, command) },
       options.yes,
     );
 
     const root = path.resolve(options.path || '.', packageName);
     ensureTarget(root, { force: options.force });
-    await generateFullstack({ ...answers, displayName, packageName }, root);
+    await generateFullstack(answers, root);
 
     if (options.git !== false) await initializeGit(root, { assumeYes: options.yes });
 
@@ -55,7 +61,7 @@ async function createFullstack(projectName, options, command) {
     console.log(chalk.white(`  cd ${packageName}/frontend && ${run} start`));
     console.log('');
   } catch (error) {
-    printError(error.message);
+    printError(error instanceof Error ? error.message : String(error));
     process.exit(1);
   }
 }
@@ -66,7 +72,11 @@ async function createFullstack(projectName, options, command) {
  * Separate from the command so the run skill's driver exercises the real composition --
  * including the cross-wiring the README documents -- without needing a TTY.
  */
-async function generateFullstack(answers, root, options = {}) {
+async function generateFullstack(
+  answers: ProjectAnswers,
+  root: string,
+  options: { angularUrl?: string; resourceServerUrl?: string } = {},
+): Promise<string> {
   const angular = getTemplate('angular');
   const resourceServer = getTemplate('resource-server');
   fs.mkdirSync(root, { recursive: true });
@@ -91,7 +101,7 @@ async function generateFullstack(answers, root, options = {}) {
   return root;
 }
 
-function writeRootReadme(root, displayName, answers) {
+function writeRootReadme(root: string, displayName: string, answers: ProjectAnswers): void {
   const backendPort = new URL(answers.resourceServerUrl).port || '8080';
   fs.writeFileSync(
     path.join(root, 'README.md'),

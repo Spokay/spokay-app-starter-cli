@@ -1,11 +1,12 @@
 import { validateClientId, validateOidcAuthority, validateUrl } from '../validators/validators.js';
+import type { Question } from '../types.js';
 
 /**
  * Questions whose answer is the same for every template in one run. The fullstack command
  * asks these once and hands the answers to both templates, which is what keeps a generated
  * pair pointing at the same identity provider.
  */
-const sharedQuestions = [
+const sharedQuestions: readonly Question[] = [
   {
     type: 'input',
     name: 'oidcAuthority',

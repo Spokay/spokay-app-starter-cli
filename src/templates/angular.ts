@@ -5,6 +5,7 @@ import { validateRequired } from '../validators/validators.js';
 import { extractRealm } from '../template/token-replacer.js';
 import { generateAppConfig } from '../config/app-config-generator.js';
 import { handleCIFiles } from '../template/ci-configurator.js';
+import type { TemplateDescriptor } from '../types.js';
 
 const angularTemplate = {
   id: 'angular',
@@ -93,6 +94,6 @@ const angularTemplate = {
   ],
 
   install: (answers) => answers.packageManager,
-};
+} satisfies TemplateDescriptor;
 
 export { angularTemplate };

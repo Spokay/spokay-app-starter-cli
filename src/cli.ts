@@ -4,16 +4,25 @@
  * CLI entry point for spokay-app-starter.
  */
 
+import { readFileSync } from 'fs';
+
 import chalk from 'chalk';
 import { program } from 'commander';
+import type { Command } from 'commander';
 
-import packageJson from '../package.json' with { type: 'json' };
-import { createProject } from '../src/commands/create.js';
-import { createFullstack } from '../src/commands/fullstack.js';
-import { templateIds, templates } from '../src/templates/registry.js';
+import { createProject } from './commands/create.js';
+import { createFullstack } from './commands/fullstack.js';
+import { getTemplate, templateIds } from './templates/registry.js';
+import type { CreateOptions } from './types.js';
+
+// This file and its compiled counterpart both sit one level under the package root, so the
+// same relative URL finds package.json from `src/` and from `dist/`.
+const packageJson = JSON.parse(
+  readFileSync(new URL('../package.json', import.meta.url), 'utf8'),
+) as { version: string };
 
 /** Options every create-style command accepts, so any run can be fully unattended. */
-const withCommonOptions = (command) =>
+const withCommonOptions = (command: Command): Command =>
   command
     .option('-p, --path <path>', 'Directory to create the project in', '.')
     .option('-t, --template <url>', 'Override the template repository URL')
@@ -44,8 +53,10 @@ for (const id of templateIds) {
   withCommonOptions(
     create
       .command(`${id} <project-name>`)
-      .description(templates[id].label)
-      .action((projectName, options, command) => createProject(id, projectName, options, command)),
+      .description(getTemplate(id).label)
+      .action((projectName: string, options: CreateOptions, command: Command) =>
+        createProject(id, projectName, options, command),
+      ),
   );
 }
 
@@ -53,7 +64,9 @@ withCommonOptions(
   create
     .command('fullstack <project-name>')
     .description('Angular SPA + Spring Boot resource server, wired to each other')
-    .action((projectName, options, command) => createFullstack(projectName, options, command)),
+    .action((projectName: string, options: CreateOptions, command: Command) =>
+      createFullstack(projectName, options, command),
+    ),
 );
 
 program
@@ -62,8 +75,9 @@ program
   .action(() => {
     console.log(chalk.cyan.bold('\nAvailable templates:\n'));
     for (const id of templateIds) {
-      console.log(`  ${chalk.green(id.padEnd(16))} ${templates[id].label}`);
-      console.log(`  ${' '.repeat(16)} ${chalk.gray(templates[id].repo)}`);
+      const template = getTemplate(id);
+      console.log(`  ${chalk.green(id.padEnd(16))} ${template.label}`);
+      console.log(`  ${' '.repeat(16)} ${chalk.gray(template.repo)}`);
     }
     console.log(`\n  ${chalk.green('fullstack'.padEnd(16))} both of the above, wired together\n`);
   });

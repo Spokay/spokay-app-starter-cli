@@ -4,15 +4,17 @@ import inquirer from 'inquirer';
 import { spawnSync } from 'child_process';
 
 /**
- * Initialize git repository and optionally add remote
- * @param {string} targetPath - Path of the project
- * @param {object} options - `assumeYes` skips both prompts, for unattended runs
- * @returns {Promise<void>}
+ * Initialize a git repository in the generated project, and optionally add a remote.
+ *
+ * @param options - `assumeYes` skips both prompts, for unattended runs
  */
-async function initializeGit(targetPath, { assumeYes = false } = {}) {
+async function initializeGit(
+  targetPath: string,
+  { assumeYes = false }: { assumeYes?: boolean } = {},
+): Promise<void> {
   const { initGit } = assumeYes
     ? { initGit: true }
-    : await inquirer.prompt([
+    : await inquirer.prompt<{ initGit: boolean }>([
         {
           type: 'confirm',
           name: 'initGit',
@@ -36,7 +38,6 @@ async function initializeGit(targetPath, { assumeYes = false } = {}) {
       return;
     }
 
-    // Initialize git
     spawnSync('git', ['init'], { cwd: targetPath, stdio: 'pipe' });
     spawnSync('git', ['add', '.'], { cwd: targetPath, stdio: 'pipe' });
     spawnSync('git', ['commit', '-m', 'chore: initial commit from angular-starter-cli'], {
@@ -53,13 +54,9 @@ async function initializeGit(targetPath, { assumeYes = false } = {}) {
   }
 }
 
-/**
- * Add git remote if user wants to
- * @param {string} targetPath - Path of the project
- * @returns {Promise<void>}
- */
-async function addGitRemote(targetPath) {
-  const { addRemote } = await inquirer.prompt([
+/** Offer to point the fresh repository at a remote. */
+async function addGitRemote(targetPath: string): Promise<void> {
+  const { addRemote } = await inquirer.prompt<{ addRemote: boolean }>([
     {
       type: 'confirm',
       name: 'addRemote',
@@ -72,12 +69,12 @@ async function addGitRemote(targetPath) {
     return;
   }
 
-  const { remoteUrl } = await inquirer.prompt([
+  const { remoteUrl } = await inquirer.prompt<{ remoteUrl: string }>([
     {
       type: 'input',
       name: 'remoteUrl',
       message: 'Enter remote repository URL:',
-      validate: (input) => {
+      validate: (input: string) => {
         if (!input || input.trim() === '') {
           return 'Remote URL is required';
         }

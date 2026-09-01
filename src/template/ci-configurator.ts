@@ -3,12 +3,10 @@ import fs from 'fs';
 import chalk from 'chalk';
 import ora from 'ora';
 
-/**
- * Handle CI file selection based on VCS host
- * @param {string} targetPath - Path of the cloned project
- * @param {string} vcsHost - VCS host (github or gitlab)
- */
-function handleCIFiles(targetPath, vcsHost) {
+import type { VcsHost } from '../types.js';
+
+/** Delete the CI configuration the generated project will not use. */
+function handleCIFiles(targetPath: string, vcsHost: VcsHost): void {
   const spinner = ora('Configuring CI files...').start();
 
   try {

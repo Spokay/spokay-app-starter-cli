@@ -1,7 +1,8 @@
 import { validateRequired } from '../validators/validators.js';
+import type { TemplateDescriptor } from '../types.js';
 
 /** `com.acme.api` -> `com/acme/api` */
-const packageToPath = (pkg) => pkg.split('.').join('/');
+const packageToPath = (pkg: string): string => pkg.split('.').join('/');
 
 const resourceServerTemplate = {
   id: 'resource-server',
@@ -82,6 +83,6 @@ const resourceServerTemplate = {
 
   postSteps: [],
   install: () => null, // Maven resolves on first build; nothing to install up front
-};
+} satisfies TemplateDescriptor;
 
 export { resourceServerTemplate, packageToPath };

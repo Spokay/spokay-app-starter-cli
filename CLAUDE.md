@@ -19,8 +19,25 @@ spokay-app-starter list
 spokay-app-starter create <angular|resource-server|fullstack> <project-name> [flags]
 ```
 
-The package is **ESM** (`"type": "module"`). Use `import`, JSON needs
-`with { type: 'json' }`, and `__dirname` is `import.meta.dirname`.
+The package is **TypeScript, compiled with `tsc`**, and **ESM** (`"type": "module"`).
+
+```
+src/**/*.ts   --tsconfig.json------->  dist/**/*.js + .d.ts   the published package
+test/*.ts     --tsconfig.test.json->   dist-test/*.js         run against dist/
+```
+
+`dist/` and `dist-test/` sit one level under the package root, exactly as `src/` and
+`test/` do, so a relative path inside a compiled file resolves the same way it does in the
+source it came from — `new URL('../package.json', import.meta.url)` finds the real one from
+both `src/cli.ts` and `dist/cli.js`. Do not flatten this to `dist/src`; it breaks that.
+
+Imports keep their `.js` extension (`./generator.js` resolves to `generator.ts`) — that is
+what `moduleResolution: nodenext` requires. `__dirname` is `import.meta.dirname`.
+
+```bash
+npm run build       # tsc -> dist/; nothing runs without this
+npm run typecheck   # tsc --noEmit over src/
+```
 
 ## Architecture
 
@@ -28,15 +45,33 @@ Templates are **data**; the pipeline is generic. Adding a stack means adding a d
 not a branch in the generator.
 
 ```
-bin/cli.js                 commander surface; one subcommand per registry entry
-src/commands/create.js     single template: prompt -> generate -> git
-src/commands/fullstack.js  both templates + the root README (generateFullstack)
-src/generator.js           clone -> renamePaths -> replaceTokens -> postSteps -> install
-src/templates/registry.js  the map of id -> descriptor
-src/templates/*.js         one descriptor per stack
-src/prompts/shared.js      questions asked once and shared by both templates
-src/prompts/ask.js         flags win over prompts; --yes takes defaults
+src/cli.ts                 commander surface; one subcommand per registry entry. The bin.
+src/types.ts               ProjectAnswers, Question, TemplateDescriptor, CreateOptions
+src/commands/create.ts     single template: prompt -> generate -> git
+src/commands/fullstack.ts  both templates + the root README (generateFullstack)
+src/generator.ts           clone -> renamePaths -> replaceTokens -> postSteps -> install
+src/templates/registry.ts  the map of id -> descriptor
+src/templates/*.ts         one descriptor per stack
+src/prompts/shared.ts      questions asked once and shared by both templates
+src/prompts/ask.ts         flags win over prompts; --yes takes defaults
 ```
+
+### The type contract
+
+`ProjectAnswers` is **one flat type with no optional fields**, covering the shared answers
+and both templates'. A `create angular` run genuinely has no `groupId`, but the Angular
+descriptor never reads one, so the missing key is unobservable. Splitting it per template
+would push a generic parameter through the registry and the generator to describe a
+distinction no code makes; making the fields optional would force a `!` at every token.
+
+The price is paid in one place: `ask()` casts what inquirer returns, because that boundary
+is keyed by question name at runtime. Everything downstream gets a real `ProjectAnswers`.
+**Extend the type; do not widen anything to `any` to get past it.**
+
+A `Question`'s `name` must be a field of `ProjectAnswers` — that is how a preset and a
+prompt meet, and a typo now fails to compile. Descriptors end with
+`satisfies TemplateDescriptor`, so a missing `tokens` entry lands on the descriptor rather
+than on its caller.
 
 ### Template descriptor
 
@@ -93,15 +128,33 @@ Changing where a token is used means updating the template repo **and** the desc
   skill asserts no `__TOKEN__` survives except in docs and the vendored Maven wrapper, which
   uses `__MVNW_CMD__` internally.
 - **Prompt types are inquirer 14's**: `input`, `confirm`, `select`, `checkbox`, `number`,
-  `password`, `search`. The legacy `list` type was removed.
+  `password`, `search`. The legacy `list` type was removed. `Question` in `src/types.ts` is
+  that union narrowed to the fields this CLI sets.
+- **`ProjectAnswers` is a type alias, not an interface.** An alias gets an implicit index
+  signature, which is what lets it satisfy inquirer's `Answers` constraint; switching it to
+  an interface makes `ask()` stop compiling for a reason that reads as unrelated.
+- **eslint flat config composes with `extends`, not by spreading.** Giving a config block
+  its own `rules` after spreading `js.configs.recommended` replaces the recommended set
+  wholesale — which silently disabled every rule but `no-unused-vars` here for a while. `Question` in `src/types.ts` is
+  that union narrowed to the fields this CLI sets.
+- **`ProjectAnswers` is a type alias, not an interface.** An alias gets an implicit index
+  signature, which is what lets it satisfy inquirer's `Answers` constraint; switching it to
+  an interface makes `ask()` stop compiling for a reason that reads as unrelated.
+- **eslint flat config composes with `extends`, not by spreading.** Giving a config block
+  its own `rules` after spreading `js.configs.recommended` replaces the recommended set
+  wholesale — which silently disabled every rule but `no-unused-vars` here for a while.
 
 ## Testing
 
 ```bash
-npm test              # structural and validator tests
+npm test              # builds, compiles the tests, runs them against dist/
+npm run typecheck
 npm run lint
 npm run format:check
 ```
+
+The tests import `../dist/**`, so they check the artifact that ships rather than the
+sources.
 
 The real coverage is the run skill, which scaffolds against the actual template repos:
 
@@ -111,5 +164,8 @@ node .claude/skills/run-spokay-app-starter-cli/driver.mjs tui       # the real p
 node .claude/skills/run-spokay-app-starter-cli/driver.mjs flags     # unattended, no TTY
 ```
 
+Every mode runs the build output, so the driver runs `npm run build` itself first; there is
+no way to test a stale `dist/`.
+
 `matrix` bypasses the prompt layer, so **run `tui` after touching anything under
-`src/prompts/` or `bin/cli.js`** — that is how the inquirer `list`/`select` break was caught.
+`src/prompts/` or `src/cli.ts`** — that is how the inquirer `list`/`select` break was caught.

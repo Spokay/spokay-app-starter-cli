@@ -4,11 +4,9 @@ import { spawnSync } from 'child_process';
 import { isValidGitUrl } from '../validators/validators.js';
 
 /**
- * Clone the template repository
- * @param {string} templateUrl - URL of the template repository
- * @param {string} targetPath - Path where the project should be created
+ * Clone the template repository into `targetPath`.
  */
-function cloneTemplate(templateUrl, targetPath) {
+function cloneTemplate(templateUrl: string, targetPath: string): void {
   try {
     // Validate template URL format to prevent command injection
     if (!isValidGitUrl(templateUrl)) {
@@ -21,7 +19,6 @@ function cloneTemplate(templateUrl, targetPath) {
     }
 
     // Use spawn with array of arguments to prevent command injection
-    // Add --no-checkout to prevent any hooks from running during clone
     const result = spawnSync('git', ['clone', '--', templateUrl, targetPath], {
       stdio: 'pipe',
       encoding: 'utf8',
@@ -40,8 +37,11 @@ function cloneTemplate(templateUrl, targetPath) {
       }
     }
   } catch (error) {
-    throw new Error(`Failed to clone template: ${error.message}`);
+    throw new Error(`Failed to clone template: ${messageOf(error)}`);
   }
 }
+
+const messageOf = (error: unknown): string =>
+  error instanceof Error ? error.message : String(error);
 
 export { cloneTemplate };

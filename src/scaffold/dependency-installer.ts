@@ -2,13 +2,20 @@ import chalk from 'chalk';
 import ora from 'ora';
 import { spawnSync } from 'child_process';
 
+import type { PackageManager } from '../types.js';
+
 /**
- * Install project dependencies using the specified package manager
- * @param {string} targetPath - Path of the project
- * @param {object} config - Configuration object with packageManager
- * @returns {Promise<boolean>} True if successful, false otherwise
+ * Install project dependencies with the chosen package manager.
+ *
+ * A missing package manager is a warning, not a failure: the project is already scaffolded
+ * and the user can install by hand.
+ *
+ * @returns whether the install actually ran and succeeded
  */
-async function installDependencies(targetPath, config) {
+async function installDependencies(
+  targetPath: string,
+  config: { packageManager: PackageManager },
+): Promise<boolean> {
   // Check if package manager is installed
   const pkgMgrCheck = spawnSync(config.packageManager, ['--version'], {
     stdio: 'pipe',
@@ -27,12 +34,10 @@ async function installDependencies(targetPath, config) {
     return false;
   }
 
-  // Install dependencies
   const installSpinner = ora(`Installing dependencies with ${config.packageManager}...`).start();
 
   try {
-    const installArgs = ['install'];
-    const installResult = spawnSync(config.packageManager, installArgs, {
+    const installResult = spawnSync(config.packageManager, ['install'], {
       cwd: targetPath,
       stdio: 'pipe',
       encoding: 'utf8',
@@ -46,10 +51,10 @@ async function installDependencies(targetPath, config) {
         ),
       );
       return false;
-    } else {
-      installSpinner.succeed(chalk.green('Dependencies installed!'));
-      return true;
     }
+
+    installSpinner.succeed(chalk.green('Dependencies installed!'));
+    return true;
   } catch {
     installSpinner.fail(chalk.red('Failed to install dependencies'));
     console.log(chalk.yellow(`\nPlease run '${config.packageManager} install' manually.\n`));

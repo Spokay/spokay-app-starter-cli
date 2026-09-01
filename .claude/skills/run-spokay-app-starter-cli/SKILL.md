@@ -116,15 +116,16 @@ node .claude/skills/run-spokay-app-starter-cli/driver.mjs e2e
 Everything else checks generated *files*. This one runs the generated *projects*: it stands
 up a full stub OIDC provider (`e2e.mjs`), scaffolds a fullstack pair against it, boots the
 generated Spring Boot backend and `ng serve`s the generated Angular frontend, logs in
-through the real authorization-code + PKCE flow in headless Chrome, and then calls the
-backend through the dev proxy with the access token the frontend actually received.
+through the real authorization-code + PKCE flow in headless Chrome, and then drives the
+app's own *Load musics* button — so the call goes through `HttpClient`, the OIDC
+interceptor, and the dev proxy the CLI configured.
 
 ```
 ✓ backend rejects an unauthenticated call
 ✓ the generated frontend completes a login against the generated backend's IdP
 ✓ the frontend shows the identity the IdP issued
-✓ the backend accepts the access token the frontend obtained  via the dev proxy -> ["Music 1","Music 2","Music 3"]
-✓ the proxied response is the backend's data
+✓ the backend accepts the access token the frontend obtained  the app called it through the dev proxy -> ["Music 1","Music 2","Music 3"]
+✓ the rendered list is the backend's data
 
 5/5 checks passed
 ```
@@ -133,10 +134,10 @@ Screenshots land in `/tmp/run-spokay-app-starter-cli/shots/`, logs in `backend.l
 `frontend.log` beside them. It is slow mostly because the scaffold runs a real `npm install`
 in the generated frontend.
 
-**What it does not prove:** the Angular template has no UI that calls the resource server, so
-the request is issued with the token read out of session storage rather than through
-Angular's `HttpClient`. The library's interceptor — the thing that would attach the token in
-a real app — is therefore not exercised.
+Because the request comes from the app rather than from the driver, this is what covers the
+OIDC interceptor: unregister `authInterceptor()` or misconfigure `secureRoutes` and the last
+two checks fail. The template's own `smoke` run asserts the `Authorization` header directly;
+here the proof is that the backend, which rejects an unauthenticated call, answered.
 
 ### Driving the CLI by hand
 

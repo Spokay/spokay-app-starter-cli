@@ -6,6 +6,25 @@ import ora from 'ora';
 import type { ProjectAnswers } from '../types.js';
 
 /**
+ * Where the generated app calls its API.
+ *
+ * Not the resource server's origin: with the dev proxy on the app must go through the
+ * proxy prefix, and with it off it must include the server's context path, or every call
+ * lands one level above the controllers. `contextPath` is optional because a standalone
+ * `create angular` run never asks for one — there `--backend-url` is already the API root.
+ */
+function apiBaseUrl(
+  answers: Pick<ProjectAnswers, 'useProxy' | 'resourceServerUrl'> &
+    Partial<Pick<ProjectAnswers, 'contextPath'>>,
+): string {
+  if (answers.useProxy) return '/api';
+  const origin = answers.resourceServerUrl.replace(/\/+$/, '');
+  const contextPath = (answers.contextPath ?? '').replace(/\/+$/, '');
+  if (!contextPath) return origin;
+  return contextPath.startsWith('/') ? `${origin}${contextPath}` : `${origin}/${contextPath}`;
+}
+
+/**
  * Write `public/assets/app-config.json`, the file the generated app fetches at runtime.
  *
  * The app is built once and deployed to many environments by swapping this file, so it is
@@ -17,8 +36,8 @@ function generateAppConfig(targetPath: string, config: ProjectAnswers): void {
   try {
     const appConfigPath = path.join(targetPath, 'public', 'assets', 'app-config.json');
 
-    // Relative path when the dev proxy is on, the full URL when requests go direct.
-    const secureRoutes = config.useProxy ? ['/api'] : [config.resourceServerUrl];
+    // The token is attached to exactly what the app calls, so both derive from one value.
+    const apiRoot = apiBaseUrl(config);
 
     const appConfig = {
       oidc: {
@@ -28,10 +47,10 @@ function generateAppConfig(targetPath: string, config: ProjectAnswers): void {
         postLogoutRedirectUri: config.frontendUrl,
         scope: 'openid profile email',
         responseType: 'code',
-        secureRoutes: secureRoutes,
+        secureRoutes: [apiRoot],
       },
       resourceServer: {
-        baseUrl: config.resourceServerUrl,
+        baseUrl: apiRoot,
       },
     };
 
@@ -50,4 +69,4 @@ function generateAppConfig(targetPath: string, config: ProjectAnswers): void {
   }
 }
 
-export { generateAppConfig };
+export { generateAppConfig, apiBaseUrl };

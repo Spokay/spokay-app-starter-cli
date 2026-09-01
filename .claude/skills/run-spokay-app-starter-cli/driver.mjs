@@ -142,6 +142,18 @@ const eq = (got, want, what) => {
   if (JSON.stringify(got) !== JSON.stringify(want))
     throw new Error(`${what}: got ${JSON.stringify(got)}, want ${JSON.stringify(want)}`);
 };
+/**
+ * Where the generated app calls its API -- mirrors `apiBaseUrl` in the CLI's
+ * app-config-generator. `/api` behind the dev proxy, origin + context path without it.
+ */
+const apiBaseUrl = (answers) => {
+  if (answers.useProxy) return '/api';
+  const origin = answers.resourceServerUrl.replace(/\/+$/, '');
+  const contextPath = (answers.contextPath ?? '').replace(/\/+$/, '');
+  if (!contextPath) return origin;
+  return contextPath.startsWith('/') ? `${origin}${contextPath}` : `${origin}/${contextPath}`;
+};
+
 const read = (dir, p) => fs.readFileSync(path.join(dir, p), 'utf8');
 const json = (dir, p) => JSON.parse(read(dir, p));
 const props = (dir, p) =>
@@ -190,9 +202,9 @@ async function verifyAngular(dir, answers) {
           postLogoutRedirectUri: answers.frontendUrl,
           scope: 'openid profile email',
           responseType: 'code',
-          secureRoutes: answers.useProxy ? ['/api'] : [answers.resourceServerUrl],
+          secureRoutes: [apiBaseUrl(answers)],
         },
-        resourceServer: { baseUrl: answers.resourceServerUrl },
+        resourceServer: { baseUrl: apiBaseUrl(answers) },
       },
       'app-config.json',
     ));
@@ -320,7 +332,13 @@ async function fullstack(overrides) {
     return front;
   });
   await check("fullstack: the backend's port is where the frontend expects it", () => {
-    const expected = new URL(json(frontend, 'public/assets/app-config.json').resourceServer.baseUrl).port;
+    // With the proxy on the app reaches the backend through the proxy target; with it off,
+    // straight at the API base URL. `baseUrl` is relative in the first case, so it is only
+    // a URL to parse in the second.
+    const reachedAt = answers.useProxy
+      ? json(frontend, 'src/proxy.conf.json')['/api/*'].target
+      : json(frontend, 'public/assets/app-config.json').resourceServer.baseUrl;
+    const expected = new URL(reachedAt).port;
     eq(props(backend, 'src/main/resources/application.properties')['server.port'], expected, 'server.port');
     return expected;
   });
@@ -515,24 +533,35 @@ async function e2e() {
     });
 
     // The payoff: a token minted by the IdP the *frontend* logged into, presented to the
-    // *backend* the CLI wired to that same IdP, through the dev proxy the CLI configured.
-    const apiResult = await cdp.eval(`(async () => {
-      const key = Object.keys(sessionStorage).find(k => (sessionStorage.getItem(k) || '').includes('access_token'));
-      const token = JSON.parse(sessionStorage.getItem(key))?.authnResult?.access_token;
-      if (!token) return { error: 'no access token in session storage' };
-      const res = await fetch('/api/musics', { headers: { Authorization: 'Bearer ' + token } });
-      return { status: res.status, body: await res.text() };
-    })()`);
+    // *backend* the CLI wired to that same IdP, through the dev proxy the CLI configured --
+    // and issued by the app itself. Building the request here instead would prove the two
+    // halves agree while saying nothing about the interceptor that attaches the token in a
+    // real app.
+    await cdp.eval(`document.querySelector('[data-testid="load-musics"]').click()`);
+    const rendered = await cdp
+      .waitFor(`document.querySelector('[data-testid="musics"] li')`, {
+        timeout: 30_000,
+        label: 'musics rendered from the generated backend',
+      })
+      .then(() =>
+        cdp.eval(
+          `[...document.querySelectorAll('[data-testid="musics"] li')].map((li) => li.textContent.trim())`,
+        ),
+      )
+      .catch(async (error) => ({
+        error: (await cdp.eval(`document.querySelector('[data-testid="musics-error"]')?.textContent?.trim()`)) ?? error.message,
+      }));
 
     await check('the backend accepts the access token the frontend obtained', () => {
-      if (apiResult.error) throw new Error(apiResult.error);
-      if (apiResult.status !== 200) throw new Error(`got ${apiResult.status}: ${apiResult.body}`);
-      return `via the dev proxy -> ${apiResult.body}`;
+      if (rendered.error) throw new Error(rendered.error);
+      return `the app called it through the dev proxy -> ${JSON.stringify(rendered)}`;
     });
-    await check('the proxied response is the backend\'s data', () => {
-      if (apiResult.body !== '["Music 1","Music 2","Music 3"]')
-        throw new Error(`unexpected body ${apiResult.body}`);
+    await check('the rendered list is the backend\'s data', () => {
+      const expected = ['Music 1', 'Music 2', 'Music 3'];
+      if (JSON.stringify(rendered) !== JSON.stringify(expected))
+        throw new Error(`unexpected list ${JSON.stringify(rendered)}`);
     });
+    await cdp.shot(path.join(WORKSPACE, 'shots'), 'e2e-03-musics');
   } finally {
     cleanup();
   }

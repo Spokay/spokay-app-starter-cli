@@ -3,8 +3,9 @@ import path from 'path';
 
 import { validateRequired } from '../validators/validators.js';
 import { extractRealm } from '../template/token-replacer.js';
-import { generateAppConfig } from '../config/app-config-generator.js';
+import { apiBaseUrl, generateAppConfig } from '../config/app-config-generator.js';
 import { handleCIFiles } from '../template/ci-configurator.js';
+import { PACKAGE_MANAGERS, VCS_HOSTS } from '../types.js';
 import type { TemplateDescriptor } from '../types.js';
 
 const angularTemplate = {
@@ -25,7 +26,7 @@ const angularTemplate = {
       name: 'vcsHost',
       flag: 'vcs',
       message: 'Which VCS host are you using?',
-      choices: ['github', 'gitlab'],
+      choices: VCS_HOSTS,
       default: 'github',
     },
     {
@@ -33,7 +34,7 @@ const angularTemplate = {
       name: 'packageManager',
       flag: 'pkg',
       message: 'Which package manager would you like to use?',
-      choices: ['npm', 'pnpm', 'yarn'],
+      choices: PACKAGE_MANAGERS,
       default: 'npm',
     },
     {
@@ -72,9 +73,14 @@ const angularTemplate = {
     __CLIENT_ID__: answers.oidcClientId,
     __REDIRECT_URL__: answers.frontendUrl,
     __POST_LOGOUT_REDIRECT_URL__: answers.frontendUrl,
+    // The proxy target has to stay the server's origin; everything the app itself calls
+    // goes through the API root instead.
     __BACKEND_URL__: answers.resourceServerUrl,
-    // Relative path when the dev proxy is on, the full URL when requests go direct.
-    __SECURE_ROUTES__: answers.useProxy ? '"/api"' : `"${answers.resourceServerUrl}"`,
+    __API_BASE_URL__: apiBaseUrl(answers),
+    // Bare, not quoted: the template already has the token inside a JSON string. The old
+    // quoted value produced invalid JSON, which only went unnoticed because the post-step
+    // below rewrites app-config.json wholesale.
+    __SECURE_ROUTES__: apiBaseUrl(answers),
     __PROXY_CONFIG__: answers.useProxy ? ',\n            "proxyConfig": "src/proxy.conf.json"' : '',
     __REALM__: extractRealm(answers.oidcAuthority),
     __NODE_VERSION__: answers.nodeVersion,

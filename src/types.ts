@@ -3,8 +3,16 @@
  * and the answers object that travels from the prompts to the token maps.
  */
 
-export type PackageManager = 'npm' | 'pnpm' | 'yarn';
-export type VcsHost = 'github' | 'gitlab';
+/**
+ * The valid values, as data. The prompt `choices` and the command-line `--pkg` / `--vcs`
+ * validation both read these, so the two cannot drift apart and let a flag through that a
+ * prompt would have rejected.
+ */
+export const PACKAGE_MANAGERS = ['npm', 'pnpm', 'yarn'] as const;
+export const VCS_HOSTS = ['github', 'gitlab'] as const;
+
+export type PackageManager = (typeof PACKAGE_MANAGERS)[number];
+export type VcsHost = (typeof VCS_HOSTS)[number];
 
 /**
  * Everything a template can read off the answers object.

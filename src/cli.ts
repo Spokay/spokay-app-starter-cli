@@ -7,12 +7,13 @@
 import { readFileSync } from 'fs';
 
 import chalk from 'chalk';
-import { program } from 'commander';
+import { Option, program } from 'commander';
 import type { Command } from 'commander';
 
 import { createProject } from './commands/create.js';
 import { createFullstack } from './commands/fullstack.js';
 import { getTemplate, templateIds } from './templates/registry.js';
+import { PACKAGE_MANAGERS, VCS_HOSTS } from './types.js';
 import type { CreateOptions } from './types.js';
 
 // This file and its compiled counterpart both sit one level under the package root, so the
@@ -30,8 +31,10 @@ const withCommonOptions = (command: Command): Command =>
     .option('--client-id <id>', 'OIDC client ID')
     .option('--frontend-url <url>', 'Where the frontend is served')
     .option('--backend-url <url>', 'Where the resource server is served')
-    .option('--vcs <host>', 'github or gitlab')
-    .option('--pkg <manager>', 'npm, pnpm or yarn')
+    // Constrained, not just documented: an unrecognised value would otherwise be copied
+    // straight into the answers and replace a token with the string "undefined".
+    .addOption(new Option('--vcs <host>', 'VCS host').choices([...VCS_HOSTS]))
+    .addOption(new Option('--pkg <manager>', 'Package manager').choices([...PACKAGE_MANAGERS]))
     .option('--node-version <version>', 'Node.js version for CI')
     .option('--no-proxy', 'Call the backend directly instead of via the dev proxy')
     .option('--group-id <id>', 'Maven groupId')

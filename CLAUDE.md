@@ -103,13 +103,21 @@ Shared between the templates on purpose — the fullstack command asks once and 
 | `__OIDC_AUTHORITY__`, `__CLIENT_ID__` | shared prompts |
 | `__REDIRECT_URL__`, `__POST_LOGOUT_REDIRECT_URL__` | `frontendUrl` |
 | `__BACKEND_URL__`, `__SERVER_PORT__` | `resourceServerUrl` |
-| `__SECURE_ROUTES__`, `__PROXY_CONFIG__` | conditional on `useProxy` |
+| `__API_BASE_URL__`, `__SECURE_ROUTES__` | `apiBaseUrl(answers)` |
+| `__PROXY_CONFIG__` | conditional on `useProxy` |
 | `__CORS_ALLOWED_ORIGINS__` | `frontendUrl` |
 | `__BASE_PACKAGE__`, `__GROUP_ID__`, `__JAVA_VERSION__`, `__CONTEXT_PATH__` | resource-server prompts |
 | `__NODE_VERSION__`, `__PKG_MGR__`, `__PKG_MGR_RUN__` | angular prompts |
 
 Changing where a token is used means updating the template repo **and** the descriptor's
 `files`/`tokens` in the same change.
+
+`apiBaseUrl` (`src/config/app-config-generator.ts`) is **where the app calls its API**, not
+the resource server's origin: `/api` behind the dev proxy, `resourceServerUrl` + the context
+path without it. Skipping the context path sends every call one level above the controllers.
+`__BACKEND_URL__` stays the bare origin because the proxy target has to be one. The same
+helper feeds the token and the `app-config.json` the CLI writes, so the file the template
+ships and the file a project gets cannot drift.
 
 ## Gotchas
 

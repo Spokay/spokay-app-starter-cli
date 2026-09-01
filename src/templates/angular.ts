@@ -77,7 +77,10 @@ const angularTemplate = {
     // goes through the API root instead.
     __BACKEND_URL__: answers.resourceServerUrl,
     __API_BASE_URL__: apiBaseUrl(answers),
-    __SECURE_ROUTES__: `"${apiBaseUrl(answers)}"`,
+    // Bare, not quoted: the template already has the token inside a JSON string. The old
+    // quoted value produced invalid JSON, which only went unnoticed because the post-step
+    // below rewrites app-config.json wholesale.
+    __SECURE_ROUTES__: apiBaseUrl(answers),
     __PROXY_CONFIG__: answers.useProxy ? ',\n            "proxyConfig": "src/proxy.conf.json"' : '',
     __REALM__: extractRealm(answers.oidcAuthority),
     __NODE_VERSION__: answers.nodeVersion,

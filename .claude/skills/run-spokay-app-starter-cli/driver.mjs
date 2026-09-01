@@ -146,10 +146,13 @@ const eq = (got, want, what) => {
  * Where the generated app calls its API -- mirrors `apiBaseUrl` in the CLI's
  * app-config-generator. `/api` behind the dev proxy, origin + context path without it.
  */
-const apiBaseUrl = (answers) =>
-  answers.useProxy
-    ? '/api'
-    : `${answers.resourceServerUrl.replace(/\/+$/, '')}${answers.contextPath ?? ''}`;
+const apiBaseUrl = (answers) => {
+  if (answers.useProxy) return '/api';
+  const origin = answers.resourceServerUrl.replace(/\/+$/, '');
+  const contextPath = (answers.contextPath ?? '').replace(/\/+$/, '');
+  if (!contextPath) return origin;
+  return contextPath.startsWith('/') ? `${origin}${contextPath}` : `${origin}/${contextPath}`;
+};
 
 const read = (dir, p) => fs.readFileSync(path.join(dir, p), 'utf8');
 const json = (dir, p) => JSON.parse(read(dir, p));
